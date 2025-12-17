@@ -55,6 +55,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="BonusManager.cs" />
+    <Compile Include="GameStateManager.cs" />
+    <Compile Include="ScoreManager.cs" />
+    <Compile Include="SettingsManager.cs" />
+    <Compile Include="SynonymDictionary.cs" />
+    <Compile Include="UIManager.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
