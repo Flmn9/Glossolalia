@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36804.6 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Glossolalia", "Glossolalia\Glossolalia.csproj", "{D29DD720-B58E-4A98-9031-E3BF0280C03E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D29DD720-B58E-4A98-9031-E3BF0280C03E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D29DD720-B58E-4A98-9031-E3BF0280C03E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D29DD720-B58E-4A98-9031-E3BF0280C03E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D29DD720-B58E-4A98-9031-E3BF0280C03E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EEB2DF49-B5E0-453E-93E9-82C0B105ED5F}
+	EndGlobalSection
+EndGlobal
