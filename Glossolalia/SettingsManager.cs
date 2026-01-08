@@ -16,6 +16,8 @@ namespace Glossolalia
       private readonly MainWindow window;
       private readonly ComboBox resolutionComboBox;
       private readonly ComboBox windowModeComboBox;
+      private readonly Slider speedSlider;
+      private readonly TextBlock speedValueText;
       private readonly List<Resolution> allResolutions;
       private readonly AppSettings currentSettings;
 
@@ -31,11 +33,17 @@ namespace Glossolalia
       /// <param name="window">Главное окно приложения</param>
       /// <param name="resolutionComboBox">Комбобокс выбора разрешения</param>
       /// <param name="windowModeComboBox">Комбобокс выбора режима окна</param>
-      public SettingsManager(MainWindow window, ComboBox resolutionComboBox, ComboBox windowModeComboBox)
+      /// <param name="speedSlider">Ползунок настройки скорости</param>
+      /// <param name="speedValueText">Текстовый блок отображения скорости</param>
+      public SettingsManager(MainWindow window, ComboBox resolutionComboBox,
+                            ComboBox windowModeComboBox, Slider speedSlider = null,
+                            TextBlock speedValueText = null)
       {
          this.window = window;
          this.resolutionComboBox = resolutionComboBox;
          this.windowModeComboBox = windowModeComboBox;
+         this.speedSlider = speedSlider;
+         this.speedValueText = speedValueText;
          this.currentSettings = AppSettings.Load();
 
          // Определение списка всех поддерживаемых разрешений
@@ -62,6 +70,7 @@ namespace Glossolalia
       /// </summary>
       public void Initialize()
       {
+         InitializeSpeedSettings();
          InitializeResolutionComboBox();
          InitializeSettingsUI();
          isInitializing = false;
@@ -126,9 +135,51 @@ namespace Glossolalia
          }
       }
 
+      /// <summary>
+      /// Обработчик изменения скорости слов
+      /// </summary>
+      /// <param name="newSpeed">Новая скорость</param>
+      public void OnSpeedChanged(double newSpeed)
+      {
+         if (!isInitializing)
+         {
+            double roundedSpeed = Math.Round(newSpeed, 1);
+            double clampedSpeed = SpeedSettings.ClampSpeed(roundedSpeed);
+
+            currentSettings.SpeedSettings.WordSpeed = clampedSpeed;
+            UpdateSpeedValueDisplay();
+            currentSettings.Save();
+         }
+      }
+
       #endregion
 
       #region Приватные методы
+
+      /// <summary>
+      /// Инициализирует настройки скорости
+      /// </summary>
+      private void InitializeSpeedSettings()
+      {
+         if (speedSlider != null)
+         {
+            speedSlider.Minimum = SpeedSettings.MIN_SPEED;
+            speedSlider.Maximum = SpeedSettings.MAX_SPEED;
+            speedSlider.Value = currentSettings.SpeedSettings.WordSpeed;
+            UpdateSpeedValueDisplay();
+         }
+      }
+
+      /// <summary>
+      /// Обновляет отображение значения скорости
+      /// </summary>
+      private void UpdateSpeedValueDisplay()
+      {
+         if (speedValueText != null)
+         {
+            speedValueText.Text = $"{currentSettings.SpeedSettings.WordSpeed:F1}";
+         }
+      }
 
       /// <summary>
       /// Заполняет выпадающий список доступными разрешениями
