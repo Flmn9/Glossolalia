@@ -1,37 +1,48 @@
-п»їusing System;
+using System;
 using System.IO;
 using System.Xml.Serialization;
 
 namespace Glossolalia
 {
    /// <summary>
-   /// РќР°СЃС‚СЂРѕР№РєРё РїСЂРёР»РѕР¶РµРЅРёСЏ. РЎРµСЂРёР°Р»РёР·СѓСЋС‚СЃСЏ РІ XML С„Р°Р№Р»
+   /// Настройки приложения. Сериализуются в XML файл
    /// </summary>
    [Serializable]
    public class AppSettings
    {
       /// <summary>
-      /// РўРµРєСѓС‰РµРµ СЂР°Р·СЂРµС€РµРЅРёРµ СЌРєСЂР°РЅР°.
+      /// Текущее разрешение экрана
       /// </summary>
       public Resolution Resolution { get; set; }
 
       /// <summary>
-      /// РўРµРєСѓС‰РёР№ СЂРµР¶РёРј РѕРєРЅР° (РѕРєРѕРЅРЅС‹Р№ РёР»Рё РїРѕР»РЅРѕСЌРєСЂР°РЅРЅС‹Р№).
+      /// Текущий режим окна (оконный или полноэкранный)
       /// </summary>
       public WindowMode WindowMode { get; set; }
 
       /// <summary>
-      /// РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ. РЈСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ Р·РЅР°С‡РµРЅРёСЏ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ.
+      /// Настройки скорости игры
+      /// </summary>
+      public SpeedSettings SpeedSettings { get; set; }
+
+      #region Конструкторы
+
+      /// <summary>
+      /// Конструктор. Устанавливает значения по умолчанию
       /// </summary>
       public AppSettings()
       {
-         // Р—РЅР°С‡РµРЅРёСЏ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
          Resolution = new Resolution(800, 600);
          WindowMode = WindowMode.Windowed;
+         SpeedSettings = new SpeedSettings();
       }
 
+      #endregion
+
+      #region Методы сохранения/загрузки
+
       /// <summary>
-      /// РЎРѕС…СЂР°РЅСЏРµС‚ РЅР°СЃС‚СЂРѕР№РєРё РІ С„Р°Р№Р».
+      /// Сохраняет настройки в файл
       /// </summary>
       public void Save(string fileName = "settings.xml")
       {
@@ -45,14 +56,14 @@ namespace Glossolalia
          }
          catch (Exception)
          {
-            // РРіРЅРѕСЂРёСЂСѓРµРј РѕС€РёР±РєРё СЃРѕС…СЂР°РЅРµРЅРёСЏ
+            // Игнорирование ошибок сохранения
          }
       }
 
       /// <summary>
-      /// Р—Р°РіСЂСѓР¶Р°РµС‚ РЅР°СЃС‚СЂРѕР№РєРё РёР· С„Р°Р№Р»Р°.
+      /// Загружает настройки из файла
       /// </summary>
-      /// <returns>Р—Р°РіСЂСѓР¶РµРЅРЅС‹Рµ РЅР°СЃС‚СЂРѕР№РєРё РёР»Рё РЅР°СЃС‚СЂРѕР№РєРё РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ</returns>
+      /// <returns>Загруженные настройки или настройки по умолчанию</returns>
       public static AppSettings Load(string fileName = "settings.xml")
       {
          try
@@ -68,15 +79,17 @@ namespace Glossolalia
          }
          catch (Exception)
          {
-            // Р•СЃР»Рё РѕС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё - РІРѕР·РІСЂР°С‰Р°РµРј РЅР°СЃС‚СЂРѕР№РєРё РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
+            // Возвращение настроек по умолчанию при ошибке загрузки
          }
 
          return new AppSettings();
       }
+
+      #endregion
    }
 
    /// <summary>
-   /// Р РµР¶РёРјС‹ РѕРєРЅР° РїСЂРёР»РѕР¶РµРЅРёСЏ.
+   /// Режимы окна приложения
    /// </summary>
    public enum WindowMode
    {
