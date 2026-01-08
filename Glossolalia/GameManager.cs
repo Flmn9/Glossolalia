@@ -99,7 +99,7 @@ namespace Glossolalia
       {
          spawnManager = new WordSpawnManager(gameCanvas, activeWords, synonymDictionary, bonusManager);
          movementManager = new WordMovementManager(activeWords, gameCanvas);
-         inputHandler = new InputHandler(scoreManager, activeWords);
+         inputHandler = new InputHandler(scoreManager, activeWords, additionalInputSystem, bonusManager);
 
          inputHandler.WordFullySelected += OnWordFullySelected;
       }
@@ -208,6 +208,17 @@ namespace Glossolalia
          }
 
          ProcessInputResult(mainSystemResult, additionalSystemResult, additionalSystemActive);
+      }
+
+      /// <summary>
+      /// Обрабатывает нажатие Backspace
+      /// </summary>
+      public void HandleBackspace()
+      {
+         if (gameStateManager.CurrentState == GameStateManager.GameState.Running)
+         {
+            inputHandler.HandleBackspace();
+         }
       }
 
       /// <summary>

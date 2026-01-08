@@ -66,9 +66,9 @@
                     </Grid>
 
                     <!-- Основная игровая область -->
-                    <Grid x:Name="GameCanvas" Margin="0,50,0,0">
+                    <Canvas x:Name="GameCanvas" Margin="0,50,0,0">
                         <!-- Здесь будет игра -->
-                    </Grid>
+                    </Canvas>
 
                     <!-- Сообщение Игра окончена -->
                     <StackPanel x:Name="GameOverStackPanel" VerticalAlignment="Center" Visibility="Collapsed">

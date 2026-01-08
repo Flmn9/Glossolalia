@@ -149,6 +149,11 @@ namespace Glossolalia
             currentSettings.SpeedSettings.WordSpeed = clampedSpeed;
             UpdateSpeedValueDisplay();
             currentSettings.Save();
+
+            if (window is MainWindow mainWindow)
+            {
+               mainWindow.UpdateWordSpeed(clampedSpeed);
+            }
          }
       }
 
