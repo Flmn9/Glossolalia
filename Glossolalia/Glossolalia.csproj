@@ -59,6 +59,7 @@
     <Compile Include="BonusManager.cs" />
     <Compile Include="FallingWord.cs" />
     <Compile Include="GameStateManager.cs" />
+    <Compile Include="InputHandler.cs" />
     <Compile Include="Resolution.cs" />
     <Compile Include="ScoreManager.cs" />
     <Compile Include="SettingsManager.cs" />
