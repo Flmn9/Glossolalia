@@ -115,8 +115,15 @@ namespace Glossolalia
         /// </summary>
         public void UpdatePosition()
         {
+            if (IsDestroyed) return;
+
             Canvas.SetLeft(textBlock, Position.X);
             Canvas.SetTop(textBlock, Position.Y);
+
+            UpdateSelection();
+            selectionRectangle.Visibility = SelectedLettersCount > 0
+                ? Visibility.Visible
+                : Visibility.Hidden;
         }
 
         /// <summary>
@@ -125,6 +132,8 @@ namespace Glossolalia
         /// <param name="deltaTime">Время, прошедшее с предыдущего кадра</param>
         public void MoveDown(double deltaTime)
         {
+            if (IsDestroyed) return;
+
             double deltaY = Speed * deltaTime;
             Position = new Point(Position.X, Position.Y + deltaY);
             UpdatePosition();
@@ -219,6 +228,7 @@ namespace Glossolalia
             if (SelectedLettersCount < Word.Length)
             {
                 SelectedLettersCount++;
+                UpdatePosition();
                 return true;
             }
             return false;
@@ -232,6 +242,7 @@ namespace Glossolalia
             if (SelectedLettersCount > 0)
             {
                 SelectedLettersCount--;
+                UpdatePosition();
             }
         }
 
@@ -241,6 +252,7 @@ namespace Glossolalia
         public void ResetSelection()
         {
             SelectedLettersCount = 0;
+            UpdatePosition();
         }
 
         /// <summary>
@@ -261,10 +273,18 @@ namespace Glossolalia
 
             IsDestroyed = true;
             parentCanvas.Children.Remove(textBlock);
-            if (selectionRectangle != null)
-            {
-                parentCanvas.Children.Remove(selectionRectangle);
-            }
+            parentCanvas.Children.Remove(selectionRectangle);
+        }
+
+        /// <summary>
+        /// Устанавливает новый текст слова
+        /// </summary>
+        public void SetWord(string newWord)
+        {
+            Word = newWord;
+            textBlock.Text = newWord;
+            cachedTextSize = null;
+            UpdatePosition();
         }
 
         #endregion
@@ -283,10 +303,44 @@ namespace Glossolalia
                 FontSize = 24,
                 Foreground = new SolidColorBrush(WordColor),
                 HorizontalAlignment = HorizontalAlignment.Left,
-                VerticalAlignment = VerticalAlignment.Top
+                VerticalAlignment = VerticalAlignment.Top,
+                CacheMode = new BitmapCache()
             };
 
+            selectionRectangle = new Rectangle
+            {
+                Fill = new SolidColorBrush(Color.FromArgb(100, 0, 120, 215)),
+                Stroke = new SolidColorBrush(Colors.DarkBlue),
+                StrokeThickness = 1,
+                Visibility = Visibility.Hidden,
+                RadiusX = 2,
+                RadiusY = 2,
+                CacheMode = new BitmapCache()
+            };
+
+            parentCanvas.Children.Add(selectionRectangle);
             parentCanvas.Children.Add(textBlock);
+        }
+
+        /// <summary>
+        /// Обновляет отображение выделения букв
+        /// </summary>
+        private void UpdateSelection()
+        {
+            if (SelectedLettersCount <= 0) return;
+
+            if (SelectedLettersCount > Word.Length)
+            {
+                SelectedLettersCount = Word.Length;
+            }
+
+            var selectedText = Word.Substring(0, SelectedLettersCount);
+            var formattedText = CreateFormattedText(selectedText);
+
+            selectionRectangle.Width = formattedText.Width + 4;
+            selectionRectangle.Height = formattedText.Height + 4;
+            Canvas.SetLeft(selectionRectangle, Position.X - 2);
+            Canvas.SetTop(selectionRectangle, Position.Y - 2);
         }
 
         /// <summary>
@@ -300,8 +354,19 @@ namespace Glossolalia
                 return cachedTextSize.Value;
             }
 
-            var formattedText = new FormattedText(
-                Word,
+            var formattedText = CreateFormattedText(Word);
+            cachedTextSize = new Size(formattedText.Width, formattedText.Height);
+            return cachedTextSize.Value;
+        }
+
+        /// <summary>
+        /// Создает форматированный текст для измерения
+        /// </summary>
+        /// <returns>Форматированный текст</returns>
+        private FormattedText CreateFormattedText(string text)
+        {
+            return new FormattedText(
+                text,
                 System.Globalization.CultureInfo.CurrentCulture,
                 FlowDirection.LeftToRight,
                 new Typeface(textBlock.FontFamily, textBlock.FontStyle,
@@ -309,9 +374,6 @@ namespace Glossolalia
                 textBlock.FontSize,
                 Brushes.Black,
                 VisualTreeHelper.GetDpi(parentCanvas).PixelsPerDip);
-
-            cachedTextSize = new Size(formattedText.Width, formattedText.Height);
-            return cachedTextSize.Value;
         }
 
         #endregion
