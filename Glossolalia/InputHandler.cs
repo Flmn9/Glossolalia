@@ -19,6 +19,8 @@ namespace Glossolalia
 
         private readonly ScoreManager scoreManager;
         private readonly List<FallingWord> activeWords;
+        private readonly AdditionalInputSystem additionalInputSystem;
+        private readonly BonusManager bonusManager;
 
         #endregion
 
@@ -43,10 +45,15 @@ namespace Glossolalia
         /// </summary>
         /// <param name="scoreManager">Менеджер счета</param>
         /// <param name="activeWords">Список активных слов</param>
-        public InputHandler(ScoreManager scoreManager, List<FallingWord> activeWords)
+        /// <param name="additionalInputSystem">Дополнительная система ввода</param>
+        /// <param name="bonusManager">Менеджер бонусов</param>
+        public InputHandler(ScoreManager scoreManager, List<FallingWord> activeWords,
+                          AdditionalInputSystem additionalInputSystem, BonusManager bonusManager)
         {
             this.scoreManager = scoreManager;
             this.activeWords = activeWords;
+            this.additionalInputSystem = additionalInputSystem;
+            this.bonusManager = bonusManager;
         }
 
         #endregion
@@ -82,6 +89,27 @@ namespace Glossolalia
             }
 
             return foundMatch;
+        }
+
+        /// <summary>
+        /// Обрабатывает нажатие Backspace
+        /// </summary>
+        public void HandleBackspace()
+        {
+            scoreManager.ResetMultiplier();
+
+            foreach (var word in activeWords)
+            {
+                if (!word.IsDestroyed && !word.IsBonus)
+                {
+                    word.DeselectLastLetter();
+                }
+            }
+
+            if (additionalInputSystem.IsActive)
+            {
+                additionalInputSystem.HandleBackspace();
+            }
         }
 
         /// <summary>
