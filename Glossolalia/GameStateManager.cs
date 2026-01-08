@@ -80,6 +80,11 @@ namespace Glossolalia
       /// </summary>
       public void StartNewGame()
       {
+         if (gameTimer != null)
+         {
+            gameTimer.Stop();
+            gameTimer = null;
+         }
          GameTime = TimeSpan.Zero;
          SetState(GameState.Running);
          StartTimer();
@@ -125,6 +130,15 @@ namespace Glossolalia
       public bool IsGamePaused()
       {
          return CurrentState == GameState.Paused;
+      }
+
+      /// <summary>
+      /// ќстанавливает игру и возвращает в главное меню
+      /// </summary>
+      public void StopToMainMenu()
+      {
+         SetState(GameState.Stopped);
+         StopTimer();
       }
 
       #endregion

@@ -354,6 +354,18 @@ namespace Glossolalia
          }
       }
 
+      /// <summary>
+      /// Обработчик текстового ввода (получает символы с учетом Shift/Caps Lock)
+      /// </summary>
+      private void Window_TextInput(object sender, TextCompositionEventArgs e)
+      {
+         if (gameStateManager.CurrentState == GameStateManager.GameState.Running && e.Text.Length > 0)
+         {
+            gameManager.HandleCharInput(e.Text[0]);
+            e.Handled = true;
+         }
+      }
+
       #endregion
    }
 }
