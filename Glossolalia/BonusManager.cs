@@ -27,21 +27,34 @@ namespace Glossolalia
       // Колбэки для взаимодействия с игровым менеджером
       private Action<double> multiplySpeedCallback;
       private Action restoreSpeedCallback;
+      private Action<string> activateAdditionalSystemCallback;
+      private Action deactivateAdditionalSystemCallback;
       private Action freezeWordsCallback;
       private Action unfreezeWordsCallback;
       private Action<bool> registerCaseCallback;
 
-      // Типы бонусов и их настройки: (Цвет, Длительность, Описание)
-      private readonly Dictionary<string, (Color Color, double Duration, string Description)> bonusTypes =
-          new Dictionary<string, (Color, double, string)>
+      // Типы бонусов и их настройки: (Цвет, Длительность, Описание, Категория)
+      private readonly Dictionary<string, (Color Color, double Duration, string Description, int Category)> bonusTypes =
+          new Dictionary<string, (Color, double, string, int)>
           {
-                { "заморозка", (Colors.Cyan, 10.0, "Остановка всех слов на 10 сек") },
-                { "регистр", (Colors.Gold, 20.0, "Случайные буквы становятся заглавными на 20 сек") }
+                { "заморозка", (Colors.Cyan, 10.0, "Остановка всех слов на 10 сек", 2) },
+                { "регистр", (Colors.Gold, 20.0, "Случайные буквы становятся заглавными на 20 сек", 3) },
+                { "синоним", (Colors.Green, 20.0, "Активирует распознавание синонимов на 20 сек", 1) },
+                { "антоним", (Colors.Red, 20.0, "Активирует распознавание антонимов на 20 сек", 1) }
           };
+
+      // Вероятности появления бонусов разных категорий
+      private readonly Dictionary<int, double> categoryProbabilities = new Dictionary<int, double>
+        {
+            { 1, 0.35 }, // Категория 1 - 35%
+            { 2, 0.45 }, // Категория 2 - 45%
+            { 3, 0.30 }  // Категория 3 - 30%
+        };
 
       // Текущие активные эффекты
       private bool isFreezeActive;
       private bool isRegisterCaseActive;
+      private bool isAdditionalSystemActive;
 
       #endregion
 
@@ -75,6 +88,17 @@ namespace Glossolalia
       }
 
       /// <summary>
+      /// Устанавливает колбэки для дополнительной системы (синонимы/антонимы)
+      /// </summary>
+      /// <param name="activateCallback">Колбэк активации системы</param>
+      /// <param name="deactivateCallback">Колбэк деактивации системы</param>
+      public void SetAdditionalSystemCallback(Action<string> activateCallback, Action deactivateCallback)
+      {
+         activateAdditionalSystemCallback = activateCallback;
+         deactivateAdditionalSystemCallback = deactivateCallback;
+      }
+
+      /// <summary>
       /// Устанавливает колбэки для заморозки
       /// </summary>
       /// <param name="freezeWordsCallback">Колбэк заморозки слов</param>
@@ -95,14 +119,28 @@ namespace Glossolalia
       }
 
       /// <summary>
-      /// Выбирает случайный бонус
+      /// Выбирает случайный бонус с учетом категорий
       /// </summary>
       /// <param name="random">Генератор случайных чисел</param>
       /// <returns>Тип бонуса или null, если нет доступных бонусов</returns>
       public string GetRandomBonusType(Random random)
       {
-         var bonusList = new List<string>(bonusTypes.Keys);
-         return bonusList.Count > 0 ? bonusList[random.Next(bonusList.Count)] : null;
+         double roll = random.NextDouble();
+         int selectedCategory = 3;
+
+         if (roll < categoryProbabilities[1])
+            selectedCategory = 1;
+         else if (roll < categoryProbabilities[1] + categoryProbabilities[2])
+            selectedCategory = 2;
+
+         var categoryBonuses = GetBonusesByCategory(selectedCategory);
+
+         if (categoryBonuses.Count == 0)
+         {
+            categoryBonuses = GetAlternativeBonuses(selectedCategory);
+         }
+
+         return categoryBonuses.Count > 0 ? categoryBonuses[random.Next(categoryBonuses.Count)] : null;
       }
 
       /// <summary>
@@ -145,6 +183,12 @@ namespace Glossolalia
          StopCurrentBonus();
          bonusTimer?.Stop();
          bonusTimer = null;
+
+         if (isAdditionalSystemActive)
+         {
+            deactivateAdditionalSystemCallback?.Invoke();
+         }
+
          ResetState();
          HideBonusUI();
       }
@@ -180,6 +224,15 @@ namespace Glossolalia
          return bonusTypes.ContainsKey(word);
       }
 
+      /// <summary>
+      /// Получает категорию бонуса
+      /// </summary>
+      /// <returns>Категория бонуса</returns>
+      public int GetBonusCategory(string bonusType)
+      {
+         return bonusTypes.ContainsKey(bonusType) ? bonusTypes[bonusType].Category : 0;
+      }
+
       #endregion
 
       #region Свойства
@@ -200,6 +253,11 @@ namespace Glossolalia
       public bool IsRegisterCaseActive => isRegisterCaseActive;
 
       /// <summary>
+      /// Проверяет, активен ли бонус синоним или антоним
+      /// </summary>
+      public bool IsSynonymOrAntonymActive => isAdditionalSystemActive;
+
+      /// <summary>
       /// Возвращает оставшееся время бонуса в секундах
       /// </summary>
       public double RemainingTime => Math.Max(0, duration - elapsed);
@@ -212,6 +270,46 @@ namespace Glossolalia
       #endregion
 
       #region Приватные методы
+
+      /// <summary>
+      /// Получает бонусы указанной категории
+      /// </summary>
+      private List<string> GetBonusesByCategory(int category)
+      {
+         var result = new List<string>();
+         foreach (var bonus in bonusTypes)
+         {
+            if (bonus.Value.Category == category)
+            {
+               result.Add(bonus.Key);
+            }
+         }
+         return result;
+      }
+
+      /// <summary>
+      /// Получает альтернативные бонусы, если в выбранной категории нет доступных
+      /// </summary>
+      private List<string> GetAlternativeBonuses(int selectedCategory)
+      {
+         var categoryBonuses = new List<string>();
+         for (int category = 1; category <= 3; category++)
+         {
+            if (category == selectedCategory) continue;
+
+            foreach (var bonus in bonusTypes)
+            {
+               if (bonus.Value.Category == category)
+               {
+                  categoryBonuses.Add(bonus.Key);
+               }
+            }
+
+            if (categoryBonuses.Count > 0)
+               break;
+         }
+         return categoryBonuses;
+      }
 
       /// <summary>
       /// Останавливает текущий активный бонус
@@ -277,6 +375,10 @@ namespace Glossolalia
             case "регистр":
                ActivateRegisterCaseEffect(duration);
                break;
+            case "синоним":
+            case "антоним":
+               ActivateAdditionalSystemEffect(bonusType, duration);
+               break;
          }
       }
 
@@ -296,6 +398,15 @@ namespace Glossolalia
       {
          isRegisterCaseActive = true;
          registerCaseCallback?.Invoke(true);
+      }
+
+      /// <summary>
+      /// Активирует эффект дополнительной системы (синонимы/антонимы)
+      /// </summary>
+      private void ActivateAdditionalSystemEffect(string bonusType, double duration)
+      {
+         isAdditionalSystemActive = true;
+         activateAdditionalSystemCallback?.Invoke(bonusType);
       }
 
       /// <summary>
@@ -342,6 +453,11 @@ namespace Glossolalia
                registerCaseCallback?.Invoke(false);
                isRegisterCaseActive = false;
                break;
+            case "синоним":
+            case "антоним":
+               deactivateAdditionalSystemCallback?.Invoke();
+               isAdditionalSystemActive = false;
+               break;
          }
       }
 
@@ -355,6 +471,7 @@ namespace Glossolalia
          elapsed = 0;
          duration = 0;
          currentBonusType = null;
+         isAdditionalSystemActive = false;
          isFreezeActive = false;
          isRegisterCaseActive = false;
       }

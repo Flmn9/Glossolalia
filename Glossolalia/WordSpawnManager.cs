@@ -1,4 +1,4 @@
-п»їusing System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -8,18 +8,18 @@ using System.Windows.Media;
 namespace Glossolalia
 {
     /// <summary>
-    /// РњРµРЅРµРґР¶РµСЂ СЃРѕР·РґР°РЅРёСЏ РЅРѕРІС‹С… СЃР»РѕРІ РЅР° РёРіСЂРѕРІРѕРј РїРѕР»Рµ
+    /// Менеджер создания новых слов на игровом поле
     /// </summary>
     public class WordSpawnManager
     {
-        #region РљРѕРЅСЃС‚Р°РЅС‚С‹
+        #region Константы
 
         private const double BONUS_SPAWN_CHANCE = 0.10;
         private const int MAX_ACTIVE_WORDS = 30;
 
         #endregion
 
-        #region РџРѕР»СЏ
+        #region Поля
 
         private readonly Canvas gameCanvas;
         private readonly Random random;
@@ -29,16 +29,16 @@ namespace Glossolalia
 
         #endregion
 
-        #region РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ
+        #region Конструктор
 
         /// <summary>
-        /// РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РјРµРЅРµРґР¶РµСЂР° СЃРѕР·РґР°РЅРёСЏ СЃР»РѕРІ
+        /// Конструктор менеджера создания слов
         /// </summary>
-        /// <param name="gameCanvas">РРіСЂРѕРІРѕР№ С…РѕР»СЃС‚</param>
-        /// <param name="activeWords">РЎРїРёСЃРѕРє Р°РєС‚РёРІРЅС‹С… СЃР»РѕРІ</param>
-        /// <param name="synonymDictionary">РЎР»РѕРІР°СЂСЊ СЃРёРЅРѕРЅРёРјРѕРІ</param>
-        /// <param name="bonusManager">РњРµРЅРµРґР¶РµСЂ Р±РѕРЅСѓСЃРѕРІ</param>
-        public WordSpawnManager(Canvas gameCanvas, List<FallingWord> activeWords,
+        /// <param name="gameCanvas">Игровой холст</param>
+        /// <param name="activeWords">Список активных слов</param>
+        /// <param name="synonymDictionary">Словарь синонимов</param>
+        /// <param name="bonusManager">Менеджер бонусов</param>
+        private WordSpawnManager(Canvas gameCanvas, List<FallingWord> activeWords,
                               SynonymDictionary synonymDictionary, BonusManager bonusManager)
         {
             this.gameCanvas = gameCanvas;
@@ -50,15 +50,15 @@ namespace Glossolalia
 
         #endregion
 
-        #region РџСѓР±Р»РёС‡РЅС‹Рµ РјРµС‚РѕРґС‹
+        #region Публичные методы
 
         /// <summary>
-        /// РЎРѕР·РґР°РµС‚ РЅРѕРІРѕРµ СЃР»РѕРІРѕ РЅР° РёРіСЂРѕРІРѕРј РїРѕР»Рµ
+        /// Создает новое слово на игровом поле
         /// </summary>
-        /// <param name="wordText">РўРµРєСЃС‚ СЃР»РѕРІР°</param>
-        /// <param name="baseSpeed">Р‘Р°Р·РѕРІР°СЏ СЃРєРѕСЂРѕСЃС‚СЊ РїР°РґРµРЅРёСЏ</param>
-        /// <param name="forceBonus">РџСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕ СЃРѕР·РґР°С‚СЊ Р±РѕРЅСѓСЃРЅРѕРµ СЃР»РѕРІРѕ</param>
-        /// <returns>РЎРѕР·РґР°РЅРЅРѕРµ СЃР»РѕРІРѕ РёР»Рё null, РµСЃР»Рё РЅРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ</returns>
+        /// <param name="wordText">Текст слова</param>
+        /// <param name="baseSpeed">Базовая скорость падения</param>
+        /// <param name="forceBonus">Принудительно создать бонусное слово</param>
+        /// <returns>Созданное слово или null, если не удалось создать</returns>
         public FallingWord SpawnWord(string wordText, double baseSpeed, bool forceBonus = false)
         {
             if (activeWords.Count(w => !w.IsDestroyed) >= MAX_ACTIVE_WORDS)
@@ -67,20 +67,20 @@ namespace Glossolalia
             bool isBonus = forceBonus || random.NextDouble() < BONUS_SPAWN_CHANCE;
             string bonusType = null;
             Color wordColor = Colors.Black;
-            string displayText = wordText; // РўРµРєСЃС‚ РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ
+            string displayText = wordText; // Текст для отображения
 
             if (isBonus)
             {
                 bonusType = bonusManager.GetRandomBonusType(random);
                 if (bonusType != null)
                 {
-                    // Р”Р»СЏ Р±РѕРЅСѓСЃРЅС‹С… СЃР»РѕРІ РёСЃРїРѕР»СЊР·СѓРµРј РЅР°Р·РІР°РЅРёРµ Р±РѕРЅСѓСЃР° РІ РєР°С‡РµСЃС‚РІРµ С‚РµРєСЃС‚Р°
+                    // Для бонусных слов используем название бонуса в качестве текста
                     displayText = bonusType;
                     wordColor = bonusManager.GetBonusColor(bonusType);
                 }
                 else
                 {
-                    // Р•СЃР»Рё РЅРµ СѓРґР°Р»РѕСЃСЊ РїРѕР»СѓС‡РёС‚СЊ С‚РёРї Р±РѕРЅСѓСЃР°, РЅРµ СЃРѕР·РґР°РµРј Р±РѕРЅСѓСЃРЅРѕРµ СЃР»РѕРІРѕ
+                    // Если не удалось получить тип бонуса, не создаем бонусное слово
                     isBonus = false;
                     displayText = GetRandomWordFromDictionary();
                 }
@@ -94,20 +94,20 @@ namespace Glossolalia
 
         #endregion
 
-        #region РџСЂРёРІР°С‚РЅС‹Рµ РјРµС‚РѕРґС‹
+        #region Приватные методы
 
         /// <summary>
-        /// Р’С‹С‡РёСЃР»СЏРµС‚ СЃРєРѕСЂРѕСЃС‚СЊ СЃР»РѕРІР° СЃ СѓС‡РµС‚РѕРј СЃР»СѓС‡Р°Р№РЅРѕРіРѕ РѕС‚РєР»РѕРЅРµРЅРёСЏ
+        /// Вычисляет скорость слова с учетом случайного отклонения
         /// </summary>
         private double CalculateWordSpeed(double baseSpeed)
         {
-            // Р”РѕР±Р°РІР»РµРЅРёРµ СЃР»СѓС‡Р°Р№РЅРѕРіРѕ РѕС‚РєР»РѕРЅРµРЅРёСЏ Рє СЃРєРѕСЂРѕСЃС‚Рё (-5% РґРѕ +50%)
+            // Добавление случайного отклонения к скорости (-5% до +50%)
             double speedDeviation = (random.NextDouble() * 0.55) - 0.05;
             return baseSpeed * (1 + speedDeviation);
         }
 
         /// <summary>
-        /// Р’С‹С‡РёСЃР»СЏРµС‚ РїРѕР·РёС†РёСЋ РґР»СЏ СЃРѕР·РґР°РЅРёСЏ РЅРѕРІРѕРіРѕ СЃР»РѕРІР°
+        /// Вычисляет позицию для создания нового слова
         /// </summary>
         private (double x, double y) CalculateSpawnPosition(string word)
         {
@@ -143,17 +143,17 @@ namespace Glossolalia
         }
 
         /// <summary>
-        /// РџРѕР»СѓС‡Р°РµС‚ СЃР»СѓС‡Р°Р№РЅРѕРµ СЃР»РѕРІРѕ РёР· СЃР»РѕРІР°СЂСЏ
+        /// Получает случайное слово из словаря
         /// </summary>
         private string GetRandomWordFromDictionary()
         {
             var allWords = synonymDictionary.GetAllWords();
-            if (allWords.Count == 0) return "РЎР›РћР’Рћ";
+            if (allWords.Count == 0) return "СЛОВО";
             return allWords[random.Next(allWords.Count)];
         }
 
         /// <summary>
-        /// РЎРѕР·РґР°РµС‚ РѕР±СЉРµРєС‚ РїР°РґР°СЋС‰РµРіРѕ СЃР»РѕРІР°
+        /// Создает объект падающего слова
         /// </summary>
         private FallingWord CreateFallingWord(string wordText, double speed, bool isBonus,
                                             string bonusType, Color wordColor, double x, double y)
