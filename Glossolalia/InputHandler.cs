@@ -1,49 +1,49 @@
-п»їusing System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Glossolalia
 {
     /// <summary>
-    /// РћР±СЂР°Р±РѕС‚С‡РёРє РІРІРѕРґР° СЃ РєР»Р°РІРёР°С‚СѓСЂС‹
+    /// Обработчик ввода с клавиатуры
     /// </summary>
     public class InputHandler
     {
-        #region РљРѕРЅСЃС‚Р°РЅС‚С‹
+        #region Константы
 
         private const int REGISTER_BONUS_MULTIPLIER = 2;
 
         #endregion
 
-        #region РџРѕР»СЏ
+        #region Поля
 
         private readonly ScoreManager scoreManager;
         private readonly List<FallingWord> activeWords;
 
         #endregion
 
-        #region РЎРѕР±С‹С‚РёСЏ
+        #region События
 
         /// <summary>
-        /// РЎРѕР±С‹С‚РёРµ РїРѕР»РЅРѕРіРѕ РІС‹РґРµР»РµРЅРёСЏ СЃР»РѕРІР°
+        /// Событие полного выделения слова
         /// </summary>
         public event Action<FallingWord> WordFullySelected;
 
         /// <summary>
-        /// РЎРѕР±С‹С‚РёРµ СѓРЅРёС‡С‚РѕР¶РµРЅРёСЏ СЃР»РѕРІ
+        /// Событие уничтожения слов
         /// </summary>
         public event Action<int> WordsDestroyed;
 
         #endregion
 
-        #region РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ
+        #region Конструктор
 
         /// <summary>
-        /// РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РѕР±СЂР°Р±РѕС‚С‡РёРєР° РІРІРѕРґР°
+        /// Конструктор обработчика ввода
         /// </summary>
-        /// <param name="scoreManager">РњРµРЅРµРґР¶РµСЂ СЃС‡РµС‚Р°</param>
-        /// <param name="activeWords">РЎРїРёСЃРѕРє Р°РєС‚РёРІРЅС‹С… СЃР»РѕРІ</param>
-        public InputHandler(ScoreManager scoreManager, List<FallingWord> activeWords)
+        /// <param name="scoreManager">Менеджер счета</param>
+        /// <param name="activeWords">Список активных слов</param>
+        private InputHandler(ScoreManager scoreManager, List<FallingWord> activeWords)
         {
             this.scoreManager = scoreManager;
             this.activeWords = activeWords;
@@ -51,14 +51,14 @@ namespace Glossolalia
 
         #endregion
 
-        #region РџСѓР±Р»РёС‡РЅС‹Рµ РјРµС‚РѕРґС‹
+        #region Публичные методы
 
         /// <summary>
-        /// РћР±СЂР°Р±Р°С‚С‹РІР°РµС‚ РІРІРѕРґ СЃРёРјРІРѕР»Р° СЃ РєР»Р°РІРёР°С‚СѓСЂС‹
+        /// Обрабатывает ввод символа с клавиатуры
         /// </summary>
-        /// <param name="pressedChar">Р’РІРµРґРµРЅРЅС‹Р№ СЃРёРјРІРѕР»</param>
-        /// <param name="isRegisterCaseActive">Р¤Р»Р°Рі Р°РєС‚РёРІРЅРѕСЃС‚Рё Р±РѕРЅСѓСЃР° СЂРµРіРёСЃС‚СЂР°</param>
-        /// <returns>True, РµСЃР»Рё РІРІРѕРґ Р±С‹Р» РѕР±СЂР°Р±РѕС‚Р°РЅ СѓСЃРїРµС€РЅРѕ</returns>
+        /// <param name="pressedChar">Введенный символ</param>
+        /// <param name="isRegisterCaseActive">Флаг активности бонуса регистра</param>
+        /// <returns>True, если ввод был обработан успешно</returns>
         public bool HandleCharInput(char pressedChar, bool isRegisterCaseActive)
         {
             bool anyWordSelected = activeWords.Any(w => !w.IsDestroyed && w.SelectedLettersCount > 0);
@@ -74,7 +74,7 @@ namespace Glossolalia
                 foundMatch = ProcessNextLetterInput(pressedChar, isRegisterCaseActive, wordsToRemove);
             }
 
-            // РЈРЅРёС‡С‚РѕР¶РµРЅРёРµ РїРѕР»РЅРѕСЃС‚СЊСЋ РІС‹РґРµР»РµРЅРЅС‹С… СЃР»РѕРІ
+            // Уничтожение полностью выделенных слов
             foreach (var word in wordsToRemove)
             {
                 WordFullySelected?.Invoke(word);
@@ -85,11 +85,11 @@ namespace Glossolalia
         }
 
         /// <summary>
-        /// Р’С‹С‡РёСЃР»СЏРµС‚ РєРѕР»РёС‡РµСЃС‚РІРѕ РѕС‡РєРѕРІ Р·Р° РІРІРѕРґ
+        /// Вычисляет количество очков за ввод
         /// </summary>
-        /// <param name="shouldAward">РќСѓР¶РЅРѕ Р»Рё РЅР°С‡РёСЃР»СЏС‚СЊ РѕС‡РєРё</param>
-        /// <param name="isRegisterCaseActive">Р¤Р»Р°Рі Р°РєС‚РёРІРЅРѕСЃС‚Рё Р±РѕРЅСѓСЃР° СЂРµРіРёСЃС‚СЂР°</param>
-        /// <returns>РљРѕР»РёС‡РµСЃС‚РІРѕ РѕС‡РєРѕРІ</returns>
+        /// <param name="shouldAward">Нужно ли начислять очки</param>
+        /// <param name="isRegisterCaseActive">Флаг активности бонуса регистра</param>
+        /// <returns>Количество очков</returns>
         public int CalculatePoints(bool shouldAward, bool isRegisterCaseActive)
         {
             if (!shouldAward) return 0;
@@ -104,9 +104,9 @@ namespace Glossolalia
         }
 
         /// <summary>
-        /// РџСЂРѕРІРµСЂСЏРµС‚, СЏРІР»СЏРµС‚СЃСЏ Р»Рё СЃРёРјРІРѕР» РґРѕРїСѓСЃС‚РёРјС‹Рј РґР»СЏ РІРІРѕРґР°
+        /// Проверяет, является ли символ допустимым для ввода
         /// </summary>
-        /// <returns>True, РµСЃР»Рё СЃРёРјРІРѕР» РґРѕРїСѓСЃС‚РёРј</returns>
+        /// <returns>True, если символ допустим</returns>
         public static bool IsValidInputChar(char c)
         {
             return IsRussianLetter(c);
@@ -114,10 +114,10 @@ namespace Glossolalia
 
         #endregion
 
-        #region РџСЂРёРІР°С‚РЅС‹Рµ РјРµС‚РѕРґС‹
+        #region Приватные методы
 
         /// <summary>
-        /// РћР±СЂР°Р±Р°С‚С‹РІР°РµС‚ РІРІРѕРґ РїРµСЂРІРѕР№ Р±СѓРєРІС‹
+        /// Обрабатывает ввод первой буквы
         /// </summary>
         private bool ProcessFirstLetterInput(char pressedChar, bool isRegisterCaseActive)
         {
@@ -138,7 +138,7 @@ namespace Glossolalia
         }
 
         /// <summary>
-        /// РћР±СЂР°Р±Р°С‚С‹РІР°РµС‚ РІРІРѕРґ СЃР»РµРґСѓСЋС‰РµР№ Р±СѓРєРІС‹
+        /// Обрабатывает ввод следующей буквы
         /// </summary>
         private bool ProcessNextLetterInput(char pressedChar, bool isRegisterCaseActive,
                                           List<FallingWord> wordsToRemove)
@@ -166,7 +166,7 @@ namespace Glossolalia
                 }
             }
 
-            // РЎР±СЂРѕСЃ РІС‹РґРµР»РµРЅРёСЏ РІ РЅРµРІС‹РґРµР»РµРЅРЅС‹С… СЃР»РѕРІР°С…
+            // Сброс выделения в невыделенных словах
             if (foundMatch)
             {
                 foreach (var word in activeWords)
@@ -182,7 +182,7 @@ namespace Glossolalia
         }
 
         /// <summary>
-        /// РџСЂРѕРІРµСЂСЏРµС‚, РЅР°С‡РёРЅР°РµС‚СЃСЏ Р»Рё СЃР»РѕРІРѕ СЃ СѓРєР°Р·Р°РЅРЅРѕР№ Р±СѓРєРІС‹
+        /// Проверяет, начинается ли слово с указанной буквы
         /// </summary>
         private bool StartsWithLetter(FallingWord word, char pressedChar, bool isRegisterCaseActive)
         {
@@ -197,7 +197,7 @@ namespace Glossolalia
         }
 
         /// <summary>
-        /// РџСЂРѕРІРµСЂСЏРµС‚, СЃРѕРІРїР°РґР°РµС‚ Р»Рё СЃР»РµРґСѓСЋС‰Р°СЏ Р±СѓРєРІР° СЃР»РѕРІР° СЃ РІРІРµРґРµРЅРЅРѕР№
+        /// Проверяет, совпадает ли следующая буква слова с введенной
         /// </summary>
         private bool NextLetterMatches(FallingWord word, char pressedChar, bool isRegisterCaseActive)
         {
@@ -213,13 +213,13 @@ namespace Glossolalia
         }
 
         /// <summary>
-        /// РџСЂРѕРІРµСЂСЏРµС‚, СЏРІР»СЏРµС‚СЃСЏ Р»Рё СЃРёРјРІРѕР» СЂСѓСЃСЃРєРѕР№ Р±СѓРєРІРѕР№
+        /// Проверяет, является ли символ русской буквой
         /// </summary>
         private static bool IsRussianLetter(char c)
         {
-            return (c >= 'Рђ' && c <= 'РЇ') ||
-                   (c >= 'Р°' && c <= 'СЏ') ||
-                   c == 'РЃ' || c == 'С‘';
+            return (c >= 'А' && c <= 'Я') ||
+                   (c >= 'а' && c <= 'я') ||
+                   c == 'Ё' || c == 'ё';
         }
 
         #endregion
