@@ -13,6 +13,7 @@ namespace Glossolalia
         #region Поля
 
         private readonly SynonymDictionary synonymDictionary;
+        private readonly TextBlock synonymTextBlock;
         private readonly Random random = new Random();
 
         private string currentInput = "";
@@ -37,9 +38,11 @@ namespace Glossolalia
         /// Конструктор дополнительной системы ввода
         /// </summary>
         /// <param name="synonymDictionary">Словарь синонимов</param>
-        public AdditionalInputSystem(SynonymDictionary synonymDictionary)
+        /// <param name="synonymTextBlock">Текстовый блок для отображения ввода</param>
+        public AdditionalInputSystem(SynonymDictionary synonymDictionary, TextBlock synonymTextBlock)
         {
             this.synonymDictionary = synonymDictionary;
+            this.synonymTextBlock = synonymTextBlock;
         }
 
         #endregion
@@ -57,6 +60,7 @@ namespace Glossolalia
             this.bonusType = bonusType;
             ResetState();
             UpdateTrackedWords(activeWords);
+            UpdateTextBlock();
         }
 
         /// <summary>
@@ -66,6 +70,7 @@ namespace Glossolalia
         {
             isActive = false;
             ResetState();
+            UpdateTextBlock();
         }
 
         /// <summary>
@@ -86,10 +91,12 @@ namespace Glossolalia
             {
                 currentInput = newInput;
                 CheckForCompleteInput(activeWords, scoreManager);
+                UpdateTextBlock();
                 return true;
             }
 
             ResetInput();
+            UpdateTextBlock();
             return false;
         }
 
@@ -101,6 +108,7 @@ namespace Glossolalia
             if (!isActive || string.IsNullOrEmpty(currentInput)) return;
 
             currentInput = currentInput.Substring(0, currentInput.Length - 1);
+            UpdateTextBlock();
         }
 
         /// <summary>
@@ -126,6 +134,7 @@ namespace Glossolalia
             {
                 ResetInput();
                 trackedWords.Remove(word);
+                UpdateTextBlock();
             }
         }
 
@@ -135,6 +144,7 @@ namespace Glossolalia
         public void Reset()
         {
             ResetState();
+            UpdateTextBlock();
         }
 
         #endregion
@@ -241,6 +251,7 @@ namespace Glossolalia
             WordDestroyedByAdditionalSystem?.Invoke(totalScore);
             ResetInput();
             UpdateTrackedWords(activeWords);
+            UpdateTextBlock();
         }
 
         /// <summary>
@@ -280,6 +291,23 @@ namespace Glossolalia
         private void ResetInput()
         {
             currentInput = "";
+        }
+
+        /// <summary>
+        /// Обновляет текстовый блок с текущим вводом
+        /// </summary>
+        private void UpdateTextBlock()
+        {
+            if (synonymTextBlock == null) return;
+
+            if (isActive && !string.IsNullOrEmpty(currentInput))
+            {
+                synonymTextBlock.Text = currentInput;
+            }
+            else
+            {
+                synonymTextBlock.Text = "";
+            }
         }
 
         #endregion

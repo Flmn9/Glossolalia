@@ -102,6 +102,36 @@ namespace Glossolalia
         }
 
         /// <summary>
+        /// Найти случайный синоним (кроме самого слова)
+        /// </summary>
+        /// <returns>Случайный синоним или null, если нет других синонимов</returns>
+        public string GetRandomSynonym(string word, Random random)
+        {
+            var synonyms = GetSynonyms(word);
+            if (synonyms.Count <= 1) return null;
+
+            string result;
+            do
+            {
+                result = synonyms[random.Next(synonyms.Count)];
+            } while (result.ToLowerInvariant() == word.ToLowerInvariant() && synonyms.Count > 1);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Найти случайный антоним
+        /// </summary>
+        /// <returns>Случайный антоним или null, если нет антонимов</returns>
+        public string GetRandomAntonym(string word, Random random)
+        {
+            var antonyms = GetAntonyms(word);
+            if (antonyms.Count == 0) return null;
+
+            return antonyms[random.Next(antonyms.Count)];
+        }
+
+        /// <summary>
         /// Получить случайное слово из словаря
         /// </summary>
         /// <returns>Случайное слово</returns>
@@ -113,12 +143,42 @@ namespace Glossolalia
         }
 
         /// <summary>
+        /// Получить случайное слово из указанного файла
+        /// </summary>
+        /// <param name="fileId">Идентификатор файла (0 - файл A, 1 - файл B)</param>
+        /// <param name="random">Генератор случайных чисел</param>
+        /// <returns>Случайное слово</returns>
+        public string GetRandomWordFromFile(int fileId, Random random)
+        {
+            var source = fileId == 0 ? synonymsA : synonymsB;
+            if (source.Count == 0) return "СЛОВО";
+
+            int lineIndex = random.Next(source.Count);
+            var words = source[lineIndex];
+
+            return words.Length > 0 ? words[random.Next(words.Length)] : "СЛОВО";
+        }
+
+        /// <summary>
         /// Получить все слова из словаря
         /// </summary>
         /// <returns>Список всех слов</returns>
         public IReadOnlyList<string> GetAllWords()
         {
             return allWords.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Получить слова из конкретной строки и файла
+        /// </summary>
+        /// <returns>Список слов из указанной строки</returns>
+        public IReadOnlyList<string> GetWordsFromLine(int fileId, int lineIndex)
+        {
+            var source = fileId == 0 ? synonymsA : synonymsB;
+            if (lineIndex < 0 || lineIndex >= source.Count)
+                return Array.Empty<string>();
+
+            return source[lineIndex];
         }
 
         #endregion
