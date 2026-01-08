@@ -66,6 +66,7 @@
     <Compile Include="SpeedSettings.cs" />
     <Compile Include="SynonymDictionary.cs" />
     <Compile Include="UIManager.cs" />
+    <Compile Include="WordMovementManager.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
