@@ -7,169 +7,211 @@ using System.Windows.Media;
 
 namespace Glossolalia
 {
-    /// <summary>
-    /// Менеджер создания новых слов на игровом поле
-    /// </summary>
-    public class WordSpawnManager
-    {
-        #region Константы
+   /// <summary>
+   /// Менеджер создания новых слов на игровом поле
+   /// </summary>
+   public class WordSpawnManager
+   {
+      #region Константы
 
-        private const double BONUS_SPAWN_CHANCE = 0.10;
-        private const int MAX_ACTIVE_WORDS = 30;
+      private const double BONUS_SPAWN_CHANCE = 0.10;
+      private const int MAX_ACTIVE_WORDS = 30;
 
-        #endregion
+      #endregion
 
-        #region Поля
+      #region Поля
 
-        private readonly Canvas gameCanvas;
-        private readonly Random random;
-        private readonly List<FallingWord> activeWords;
-        private readonly SynonymDictionary synonymDictionary;
-        private readonly BonusManager bonusManager;
+      private readonly Canvas gameCanvas;
+      private readonly Random random;
+      private readonly List<FallingWord> activeWords;
+      private readonly SynonymDictionary synonymDictionary;
+      private readonly BonusManager bonusManager;
 
-        #endregion
+      #endregion
 
-        #region Конструктор
+      #region Конструктор
 
-        /// <summary>
-        /// Конструктор менеджера создания слов
-        /// </summary>
-        /// <param name="gameCanvas">Игровой холст</param>
-        /// <param name="activeWords">Список активных слов</param>
-        /// <param name="synonymDictionary">Словарь синонимов</param>
-        /// <param name="bonusManager">Менеджер бонусов</param>
-        public WordSpawnManager(Canvas gameCanvas, List<FallingWord> activeWords,
-                              SynonymDictionary synonymDictionary, BonusManager bonusManager)
-        {
-            this.gameCanvas = gameCanvas;
-            this.activeWords = activeWords;
-            this.synonymDictionary = synonymDictionary;
-            this.bonusManager = bonusManager;
-            random = new Random();
-        }
+      /// <summary>
+      /// Конструктор менеджера создания слов
+      /// </summary>
+      /// <param name="gameCanvas">Игровой холст</param>
+      /// <param name="activeWords">Список активных слов</param>
+      /// <param name="synonymDictionary">Словарь синонимов</param>
+      /// <param name="bonusManager">Менеджер бонусов</param>
+      public WordSpawnManager(Canvas gameCanvas, List<FallingWord> activeWords,
+                            SynonymDictionary synonymDictionary, BonusManager bonusManager)
+      {
+         this.gameCanvas = gameCanvas;
+         this.activeWords = activeWords;
+         this.synonymDictionary = synonymDictionary;
+         this.bonusManager = bonusManager;
+         random = new Random();
+      }
 
-        #endregion
+      #endregion
 
-        #region Публичные методы
+      #region Публичные методы
 
-        /// <summary>
-        /// Создает новое слово на игровом поле
-        /// </summary>
-        /// <param name="wordText">Текст слова</param>
-        /// <param name="baseSpeed">Базовая скорость падения</param>
-        /// <param name="forceBonus">Принудительно создать бонусное слово</param>
-        /// <returns>Созданное слово или null, если не удалось создать</returns>
-        public FallingWord SpawnWord(string wordText, double baseSpeed, bool forceBonus = false)
-        {
-            if (activeWords.Count(w => !w.IsDestroyed) >= MAX_ACTIVE_WORDS)
-                return null;
+      /// <summary>
+      /// Создает новое слово на игровом поле
+      /// </summary>
+      /// <param name="wordText">Текст слова</param>
+      /// <param name="baseSpeed">Базовая скорость падения</param>
+      /// <param name="forceBonus">Принудительно создать бонусное слово</param>
+      /// <returns>Созданное слово или null, если не удалось создать</returns>
+      public FallingWord SpawnWord(string wordText, double baseSpeed, bool forceBonus = false)
+      {
+         if (activeWords.Count(w => !w.IsDestroyed) >= MAX_ACTIVE_WORDS)
+            return null;
 
-            bool isBonus = forceBonus || random.NextDouble() < BONUS_SPAWN_CHANCE;
-            string bonusType = null;
-            Color wordColor = Colors.Black;
-            string displayText = wordText; // Текст для отображения
+         bool isBonus = forceBonus || random.NextDouble() < BONUS_SPAWN_CHANCE;
+         string bonusType = null;
+         Color wordColor = Colors.Black;
+         string displayText = wordText; // Текст для отображения
 
-            if (isBonus)
+         if (isBonus)
+         {
+            bonusType = bonusManager.GetRandomBonusType(random);
+            if (bonusType != null)
             {
-                bonusType = bonusManager.GetRandomBonusType(random);
-                if (bonusType != null)
-                {
-                    // Для бонусных слов используем название бонуса в качестве текста
-                    displayText = bonusType;
-                    wordColor = bonusManager.GetBonusColor(bonusType);
-                }
-                else
-                {
-                    // Если не удалось получить тип бонуса, не создаем бонусное слово
-                    isBonus = false;
-                    displayText = GetRandomWordFromDictionary();
-                }
+               // Для бонусных слов используем название бонуса в качестве текста
+               displayText = bonusType;
+               wordColor = bonusManager.GetBonusColor(bonusType);
             }
-
-            double speed = CalculateWordSpeed(baseSpeed);
-            var (x, y) = CalculateSpawnPosition(displayText);
-
-            return CreateFallingWord(displayText, speed, isBonus, bonusType, wordColor, x, y);
-        }
-
-        #endregion
-
-        #region Приватные методы
-
-        /// <summary>
-        /// Вычисляет скорость слова с учетом случайного отклонения
-        /// </summary>
-        private double CalculateWordSpeed(double baseSpeed)
-        {
-            // Добавление случайного отклонения к скорости (-5% до +50%)
-            double speedDeviation = (random.NextDouble() * 0.55) - 0.05;
-            return baseSpeed * (1 + speedDeviation);
-        }
-
-        /// <summary>
-        /// Вычисляет позицию для создания нового слова
-        /// </summary>
-        private (double x, double y) CalculateSpawnPosition(string word)
-        {
-            double canvasWidth = gameCanvas.ActualWidth;
-            double canvasHeight = gameCanvas.ActualHeight;
-
-            if (canvasWidth <= 0 || canvasHeight <= 0)
+            else
             {
-                canvasWidth = 800;
-                canvasHeight = 550;
+               // Если не удалось получить тип бонуса, не создаем бонусное слово
+               isBonus = false;
+               displayText = GetRandomWordFromDictionary();
             }
+         }
 
-            var formattedText = new FormattedText(
-                word,
-                System.Globalization.CultureInfo.CurrentCulture,
-                FlowDirection.LeftToRight,
-                new Typeface(new FontFamily("Consolas"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
-                24,
-                Brushes.Black,
-                VisualTreeHelper.GetDpi(gameCanvas).PixelsPerDip);
+         double speed = CalculateWordSpeed(baseSpeed);
+         var (x, y) = CalculateSpawnPosition(displayText);
 
-            double wordWidth = formattedText.Width;
+         // Проверка пересечения с существующими словами
+         int attempts = 0;
+         while (CheckOverlapWithExisting(x, y, displayText) && attempts < 5)
+         {
+            (x, y) = CalculateSpawnPosition(displayText);
+            attempts++;
+         }
 
-            double maxX = canvasWidth - wordWidth - 20;
-            double minX = 20;
+         if (attempts >= 5) return null;
 
-            if (maxX < minX) maxX = minX;
+         return CreateFallingWord(displayText, speed, isBonus, bonusType, wordColor, x, y);
+      }
 
-            double x = minX + random.NextDouble() * (maxX - minX);
-            double y = 0;
+      #endregion
 
-            return (x, y);
-        }
+      #region Приватные методы
 
-        /// <summary>
-        /// Получает случайное слово из словаря
-        /// </summary>
-        private string GetRandomWordFromDictionary()
-        {
-            var allWords = synonymDictionary.GetAllWords();
-            if (allWords.Count == 0) return "СЛОВО";
-            return allWords[random.Next(allWords.Count)];
-        }
+      /// <summary>
+      /// Вычисляет скорость слова с учетом случайного отклонения
+      /// </summary>
+      private double CalculateWordSpeed(double baseSpeed)
+      {
+         // Добавление случайного отклонения к скорости (-5% до +50%)
+         double speedDeviation = (random.NextDouble() * 0.55) - 0.05;
+         return baseSpeed * (1 + speedDeviation);
+      }
 
-        /// <summary>
-        /// Создает объект падающего слова
-        /// </summary>
-        private FallingWord CreateFallingWord(string wordText, double speed, bool isBonus,
-                                            string bonusType, Color wordColor, double x, double y)
-        {
-            var fallingWord = new FallingWord(
-                wordText,
-                speed,
-                gameCanvas,
-                isBonus,
-                bonusType,
-                wordColor);
+      /// <summary>
+      /// Вычисляет позицию для создания нового слова
+      /// </summary>
+      private (double x, double y) CalculateSpawnPosition(string word)
+      {
+         double canvasWidth = gameCanvas.ActualWidth;
+         double canvasHeight = gameCanvas.ActualHeight;
 
-            fallingWord.SetPosition(x, y);
-            return fallingWord;
-        }
+         if (canvasWidth <= 0 || canvasHeight <= 0)
+         {
+            canvasWidth = 800;
+            canvasHeight = 550;
+         }
 
-        #endregion
-    }
+         var formattedText = new FormattedText(
+             word,
+             System.Globalization.CultureInfo.CurrentCulture,
+             FlowDirection.LeftToRight,
+             new Typeface(new FontFamily("Consolas"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+             24,
+             Brushes.Black,
+             VisualTreeHelper.GetDpi(gameCanvas).PixelsPerDip);
+
+         double wordWidth = formattedText.Width;
+
+         double maxX = canvasWidth - wordWidth - 20;
+         double minX = 20;
+
+         if (maxX < minX) maxX = minX;
+
+         double x = minX + random.NextDouble() * (maxX - minX);
+         double y = 0;
+
+         return (x, y);
+      }
+
+      /// <summary>
+      /// Проверяет пересечение нового слова с существующими
+      /// </summary>
+      private bool CheckOverlapWithExisting(double x, double y, string wordText)
+      {
+         var formattedText = new FormattedText(
+             wordText,
+             System.Globalization.CultureInfo.CurrentCulture,
+             FlowDirection.LeftToRight,
+             new Typeface(new FontFamily("Consolas"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+             24,
+             Brushes.Black,
+             VisualTreeHelper.GetDpi(gameCanvas).PixelsPerDip);
+
+         var newBounds = new Rect(x, y, formattedText.Width, formattedText.Height + 10);
+
+         foreach (var word in activeWords)
+         {
+            if (word.IsDestroyed) continue;
+
+            var wordBounds = word.Bounds;
+            wordBounds.Inflate(5, 5);
+
+            if (newBounds.IntersectsWith(wordBounds))
+            {
+               return true;
+            }
+         }
+
+         return false;
+      }
+
+      /// <summary>
+      /// Получает случайное слово из словаря
+      /// </summary>
+      private string GetRandomWordFromDictionary()
+      {
+         var allWords = synonymDictionary.GetAllWords();
+         if (allWords.Count == 0) return "СЛОВО";
+         return allWords[random.Next(allWords.Count)];
+      }
+
+      /// <summary>
+      /// Создает объект падающего слова
+      /// </summary>
+      private FallingWord CreateFallingWord(string wordText, double speed, bool isBonus,
+                                          string bonusType, Color wordColor, double x, double y)
+      {
+         var fallingWord = new FallingWord(
+             wordText,
+             speed,
+             gameCanvas,
+             isBonus,
+             bonusType,
+             wordColor);
+
+         fallingWord.SetPosition(x, y);
+         return fallingWord;
+      }
+
+      #endregion
+   }
 }
