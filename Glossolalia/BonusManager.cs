@@ -31,6 +31,8 @@ namespace Glossolalia
       private Action deactivateAdditionalSystemCallback;
       private Action freezeWordsCallback;
       private Action unfreezeWordsCallback;
+      private Action stopWordSpawnCallback;
+      private Action resumeWordSpawnCallback;
       private Action<bool> registerCaseCallback;
 
       // Типы бонусов и их настройки: (Цвет, Длительность, Описание, Категория)
@@ -55,6 +57,9 @@ namespace Glossolalia
       private bool isFreezeActive;
       private bool isRegisterCaseActive;
       private bool isAdditionalSystemActive;
+
+      // Для плавного обновления UI
+      private DateTime lastUpdateTime;
 
       #endregion
 
@@ -103,10 +108,15 @@ namespace Glossolalia
       /// </summary>
       /// <param name="freezeWordsCallback">Колбэк заморозки слов</param>
       /// <param name="unfreezeWordsCallback">Колбэк разморозки слов</param>
-      public void SetFreezeCallbacks(Action freezeWordsCallback, Action unfreezeWordsCallback)
+      /// <param name="stopWordSpawnCallback">Колбэк остановки создания слов</param>
+      /// <param name="resumeWordSpawnCallback">Колбэк возобновления создания слов</param>
+      public void SetFreezeCallbacks(Action freezeWordsCallback, Action unfreezeWordsCallback,
+                                   Action stopWordSpawnCallback, Action resumeWordSpawnCallback)
       {
          this.freezeWordsCallback = freezeWordsCallback;
          this.unfreezeWordsCallback = unfreezeWordsCallback;
+         this.stopWordSpawnCallback = stopWordSpawnCallback;
+         this.resumeWordSpawnCallback = resumeWordSpawnCallback;
       }
 
       /// <summary>
@@ -151,6 +161,14 @@ namespace Glossolalia
          if (!bonusTypes.ContainsKey(bonusName)) return;
 
          StopCurrentBonus();
+
+         // Деактивируем старую дополнительную систему, если она была активна
+         if ((bonusName == "синоним" || bonusName == "антоним") && isAdditionalSystemActive)
+         {
+            deactivateAdditionalSystemCallback?.Invoke();
+            isAdditionalSystemActive = false;
+         }
+
          ShowBonusUI(bonusName);
          ResetBonusState(bonusName, durationSeconds);
          ActivateBonusEffect(bonusName, durationSeconds);
@@ -171,6 +189,7 @@ namespace Glossolalia
          }
          else
          {
+            lastUpdateTime = DateTime.Now;
             bonusTimer?.Start();
          }
       }
@@ -180,7 +199,7 @@ namespace Glossolalia
       /// </summary>
       public void Reset()
       {
-         StopCurrentBonus();
+         StopCurrentBonus(true);
          bonusTimer?.Stop();
          bonusTimer = null;
 
@@ -222,6 +241,15 @@ namespace Glossolalia
       public bool IsBonusWord(string word)
       {
          return bonusTypes.ContainsKey(word);
+      }
+
+      /// <summary>
+      /// Получает список всех доступных бонусных слов
+      /// </summary>
+      /// <returns>Список названий бонусов</returns>
+      public List<string> GetBonusWords()
+      {
+         return new List<string>(bonusTypes.Keys);
       }
 
       /// <summary>
@@ -314,7 +342,7 @@ namespace Glossolalia
       /// <summary>
       /// Останавливает текущий активный бонус
       /// </summary>
-      private void StopCurrentBonus()
+      private void StopCurrentBonus(bool keepUIVisible = false)
       {
          if (isActive && !string.IsNullOrEmpty(currentBonusType))
          {
@@ -323,8 +351,13 @@ namespace Glossolalia
 
          bonusTimer?.Stop();
          bonusTimer = null;
+
          ResetState();
-         HideBonusUI();
+
+         if (!keepUIVisible)
+         {
+            HideBonusUI();
+         }
       }
 
       /// <summary>
@@ -360,6 +393,7 @@ namespace Glossolalia
          isPaused = false;
          isActive = true;
          currentBonusType = bonusName;
+         lastUpdateTime = DateTime.Now;
       }
 
       /// <summary>
@@ -389,6 +423,7 @@ namespace Glossolalia
       {
          isFreezeActive = true;
          freezeWordsCallback?.Invoke();
+         stopWordSpawnCallback?.Invoke();
       }
 
       /// <summary>
@@ -415,19 +450,23 @@ namespace Glossolalia
       private void StartBonusTimer()
       {
          bonusTimer = new DispatcherTimer(DispatcherPriority.Render);
-         bonusTimer.Interval = TimeSpan.FromSeconds(1);
+         bonusTimer.Interval = TimeSpan.FromMilliseconds(16); // ~60 FPS
          bonusTimer.Tick += BonusTimer_Tick;
          bonusTimer.Start();
       }
 
       /// <summary>
-      /// Обработчик тика таймера бонуса
+      /// Обработчик тика таймера бонуса с плавным обновлением
       /// </summary>
       private void BonusTimer_Tick(object sender, EventArgs e)
       {
          if (isPaused || !isActive) return;
 
-         elapsed += 1;
+         var currentTime = DateTime.Now;
+         var deltaTime = (currentTime - lastUpdateTime).TotalSeconds;
+         lastUpdateTime = currentTime;
+
+         elapsed += deltaTime;
          double progress = 1 - (elapsed / duration);
 
          progressBar.Value = Math.Max(0, progress);
@@ -447,6 +486,7 @@ namespace Glossolalia
          {
             case "заморозка":
                unfreezeWordsCallback?.Invoke();
+               resumeWordSpawnCallback?.Invoke();
                isFreezeActive = false;
                break;
             case "регистр":

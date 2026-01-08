@@ -376,6 +376,27 @@ namespace Glossolalia
       }
 
       /// <summary>
+      /// Останавливает создание новых слов
+      /// </summary>
+      public void StopWordSpawn()
+      {
+         wordSpawnTimer.Stop();
+      }
+
+      /// <summary>
+      /// Возобновляет создание новых слов
+      /// </summary>
+      public void ResumeWordSpawn()
+      {
+         if (!isFrozen &&
+             !bonusManager.IsFreezeActive &&
+             gameStateManager.CurrentState == GameStateManager.GameState.Running)
+         {
+            wordSpawnTimer.Start();
+         }
+      }
+
+      /// <summary>
       /// Освобождает ресурсы
       /// </summary>
       public void Dispose()
