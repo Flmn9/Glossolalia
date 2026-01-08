@@ -67,6 +67,7 @@
     <Compile Include="SynonymDictionary.cs" />
     <Compile Include="UIManager.cs" />
     <Compile Include="WordMovementManager.cs" />
+    <Compile Include="WordSpawnManager.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
