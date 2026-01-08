@@ -5,311 +5,356 @@ using System.Windows.Controls;
 
 namespace Glossolalia
 {
-    /// <summary>
-    /// Дополнительная система ввода для обработки синонимов и антонимов
-    /// </summary>
-    public class AdditionalInputSystem
-    {
-        #region Поля
+   /// <summary>
+   /// Дополнительная система ввода для обработки синонимов и антонимов
+   /// </summary>
+   public class AdditionalInputSystem
+   {
+      #region Поля
 
-        private readonly SynonymDictionary synonymDictionary;
-        private readonly TextBlock synonymTextBlock;
-        private readonly Random random = new Random();
+      private readonly SynonymDictionary synonymDictionary;
+      private readonly TextBlock synonymTextBlock;
+      private readonly Random random = new Random();
 
-        private string currentInput = "";
-        private bool isActive;
-        private string bonusType;
-        private List<FallingWord> trackedWords = new List<FallingWord>();
+      private string currentInput = "";
+      private bool isActive;
+      private string bonusType;
+      private List<FallingWord> trackedWords = new List<FallingWord>();
+      private List<FallingWord> lastMatchingWords = new List<FallingWord>();
 
-        #endregion
+      #endregion
 
-        #region События
+      #region События
 
-        /// <summary>
-        /// Событие уничтожения слова дополнительной системой
-        /// </summary>
-        public event Action<int> WordDestroyedByAdditionalSystem;
+      /// <summary>
+      /// Событие уничтожения слова дополнительной системой
+      /// </summary>
+      public event Action<int, int> WordDestroyedByAdditionalSystem;
 
-        #endregion
+      #endregion
 
-        #region Конструктор
+      #region Конструктор
 
-        /// <summary>
-        /// Конструктор дополнительной системы ввода
-        /// </summary>
-        /// <param name="synonymDictionary">Словарь синонимов</param>
-        /// <param name="synonymTextBlock">Текстовый блок для отображения ввода</param>
-        public AdditionalInputSystem(SynonymDictionary synonymDictionary, TextBlock synonymTextBlock)
-        {
-            this.synonymDictionary = synonymDictionary;
-            this.synonymTextBlock = synonymTextBlock;
-        }
+      /// <summary>
+      /// Конструктор дополнительной системы ввода
+      /// </summary>
+      /// <param name="synonymDictionary">Словарь синонимов</param>
+      /// <param name="synonymTextBlock">Текстовый блок для отображения ввода</param>
+      public AdditionalInputSystem(SynonymDictionary synonymDictionary, TextBlock synonymTextBlock)
+      {
+         this.synonymDictionary = synonymDictionary;
+         this.synonymTextBlock = synonymTextBlock;
+      }
 
-        #endregion
+      #endregion
 
-        #region Публичные методы
+      #region Публичные методы
 
-        /// <summary>
-        /// Активирует дополнительную систему ввода
-        /// </summary>
-        /// <param name="bonusType">Тип бонуса (синоним/антоним)</param>
-        /// <param name="activeWords">Список активных слов</param>
-        public void Activate(string bonusType, List<FallingWord> activeWords)
-        {
-            isActive = true;
-            this.bonusType = bonusType;
-            ResetState();
-            UpdateTrackedWords(activeWords);
+      /// <summary>
+      /// Активирует дополнительную систему ввода
+      /// </summary>
+      /// <param name="bonusType">Тип бонуса (синоним/антоним)</param>
+      /// <param name="activeWords">Список активных слов</param>
+      public void Activate(string bonusType, List<FallingWord> activeWords)
+      {
+         isActive = true;
+         this.bonusType = bonusType;
+         ResetState();
+         UpdateTrackedWords(activeWords);
+         UpdateTextBlock();
+      }
+
+      /// <summary>
+      /// Деактивирует дополнительную систему ввода
+      /// </summary>
+      public void Deactivate()
+      {
+         isActive = false;
+         ResetState();
+         UpdateTextBlock();
+      }
+
+      /// <summary>
+      /// Обрабатывает ввод символа
+      /// </summary>
+      /// <param name="pressedChar">Введенный символ</param>
+      /// <param name="activeWords">Список активных слов</param>
+      /// <param name="scoreManager">Менеджер счета</param>
+      /// <returns>True, если ввод был успешно обработан</returns>
+      public bool HandleCharInput(char pressedChar, List<FallingWord> activeWords, ScoreManager scoreManager)
+      {
+         if (!isActive) return true;
+
+         string newInput = currentInput + pressedChar;
+         var matchingWords = FindMatchingWords(newInput);
+
+         if (matchingWords.Count > 0)
+         {
+            currentInput = newInput;
+            lastMatchingWords = matchingWords;
+
+            CheckForCompleteInput(activeWords, scoreManager);
             UpdateTextBlock();
-        }
+            return true;
+         }
 
-        /// <summary>
-        /// Деактивирует дополнительную систему ввода
-        /// </summary>
-        public void Deactivate()
-        {
-            isActive = false;
-            ResetState();
-            UpdateTextBlock();
-        }
+         ResetInput();
+         UpdateTextBlock();
+         return false;
+      }
 
-        /// <summary>
-        /// Обрабатывает ввод символа
-        /// </summary>
-        /// <param name="pressedChar">Введенный символ</param>
-        /// <param name="activeWords">Список активных слов</param>
-        /// <param name="scoreManager">Менеджер счета</param>
-        /// <returns>True, если ввод был успешно обработан</returns>
-        public bool HandleCharInput(char pressedChar, List<FallingWord> activeWords, ScoreManager scoreManager)
-        {
-            if (!isActive) return true;
+      /// <summary>
+      /// Обрабатывает нажатие Backspace
+      /// </summary>
+      public void HandleBackspace()
+      {
+         if (!isActive || string.IsNullOrEmpty(currentInput)) return;
 
-            string newInput = currentInput + pressedChar;
-            var matchingWords = FindMatchingWords(newInput);
+         currentInput = currentInput.Substring(0, currentInput.Length - 1);
+         if (string.IsNullOrEmpty(currentInput))
+         {
+            lastMatchingWords.Clear();
+         }
 
-            if (matchingWords.Count > 0)
-            {
-                currentInput = newInput;
-                CheckForCompleteInput(activeWords, scoreManager);
-                UpdateTextBlock();
-                return true;
-            }
+         UpdateTextBlock();
+      }
 
+      /// <summary>
+      /// Обновляет список отслеживаемых слов
+      /// </summary>
+      /// <param name="activeWords">Список активных слов</param>
+      public void UpdateTrackedWords(List<FallingWord> activeWords)
+      {
+         if (!isActive) return;
+
+         trackedWords = activeWords
+             .Where(w => !w.IsDestroyed && !w.IsBonus)
+             .ToList();
+      }
+
+      /// <summary>
+      /// Уведомляет о уничтожении слова основной системой
+      /// </summary>
+      /// <param name="word">Уничтоженное слово</param>
+      public void NotifyWordDestroyedByMainSystem(FallingWord word)
+      {
+         if (isActive)
+         {
             ResetInput();
-            UpdateTextBlock();
-            return false;
-        }
+            trackedWords.Remove(word);
+            lastMatchingWords.Remove(word);
+         }
+      }
 
-        /// <summary>
-        /// Обрабатывает нажатие Backspace
-        /// </summary>
-        public void HandleBackspace()
-        {
-            if (!isActive || string.IsNullOrEmpty(currentInput)) return;
+      /// <summary>
+      /// Сбрасывает состояние системы
+      /// </summary>
+      public void Reset()
+      {
+         ResetState();
+         UpdateTextBlock();
+      }
 
-            currentInput = currentInput.Substring(0, currentInput.Length - 1);
-            UpdateTextBlock();
-        }
+      #endregion
 
-        /// <summary>
-        /// Обновляет список отслеживаемых слов
-        /// </summary>
-        /// <param name="activeWords">Список активных слов</param>
-        public void UpdateTrackedWords(List<FallingWord> activeWords)
-        {
-            if (!isActive) return;
+      #region Свойства
 
-            trackedWords = activeWords
-                .Where(w => !w.IsDestroyed && !w.IsBonus)
-                .ToList();
-        }
+      /// <summary>
+      /// Проверяет, активна ли дополнительная система
+      /// </summary>
+      public bool IsActive => isActive;
 
-        /// <summary>
-        /// Уведомляет о уничтожении слова основной системой
-        /// </summary>
-        /// <param name="word">Уничтоженное слово</param>
-        public void NotifyWordDestroyedByMainSystem(FallingWord word)
-        {
-            if (isActive)
+      #endregion
+
+      #region Приватные методы
+
+      /// <summary>
+      /// Ищет слова, соответствующие введенной строке
+      /// </summary>
+      private List<FallingWord> FindMatchingWords(string input)
+      {
+         var sourceWords = lastMatchingWords.Count > 0 ? lastMatchingWords : trackedWords;
+         var matchingWords = new List<FallingWord>();
+
+         foreach (var word in sourceWords)
+         {
+            if (word.IsDestroyed || word.IsBonus) continue;
+
+            var relatedWords = GetRelatedWords(word.Word);
+            if (relatedWords.Any(w => w.StartsWith(input, StringComparison.OrdinalIgnoreCase)))
             {
-                ResetInput();
-                trackedWords.Remove(word);
-                UpdateTextBlock();
+               matchingWords.Add(word);
             }
-        }
+         }
 
-        /// <summary>
-        /// Сбрасывает состояние системы
-        /// </summary>
-        public void Reset()
-        {
-            ResetState();
-            UpdateTextBlock();
-        }
+         return matchingWords;
+      }
 
-        #endregion
+      /// <summary>
+      /// Получает связанные слова (синонимы или антонимы)
+      /// </summary>
+      private List<string> GetRelatedWords(string word)
+      {
+         var result = new List<string>();
 
-        #region Свойства
+         if (bonusType == "синоним")
+         {
+            result.AddRange(synonymDictionary.GetSynonyms(word));
+         }
+         else if (bonusType == "антоним")
+         {
+            result.AddRange(synonymDictionary.GetAntonyms(word));
+         }
 
-        /// <summary>
-        /// Проверяет, активна ли дополнительная система
-        /// </summary>
-        public bool IsActive => isActive;
+         return result.Select(w => w.ToLowerInvariant()).Distinct().ToList();
+      }
 
-        #endregion
+      /// <summary>
+      /// Проверяет, введено ли полное слово
+      /// </summary>
+      private void CheckForCompleteInput(List<FallingWord> activeWords, ScoreManager scoreManager)
+      {
+         var wordsToDestroy = new List<FallingWord>();
 
-        #region Приватные методы
+         foreach (var word in lastMatchingWords)
+         {
+            if (word.IsDestroyed) continue;
 
-        /// <summary>
-        /// Ищет слова, соответствующие введенной строке
-        /// </summary>
-        private List<FallingWord> FindMatchingWords(string input)
-        {
-            var matchingWords = new List<FallingWord>();
-
-            foreach (var word in trackedWords)
+            var relatedWords = GetRelatedWords(word.Word);
+            if (relatedWords.Any(w => w.Equals(currentInput, StringComparison.OrdinalIgnoreCase)))
             {
-                if (word.IsDestroyed || word.IsBonus) continue;
-
-                var relatedWords = GetRelatedWords(word.Word);
-                if (relatedWords.Any(w => w.StartsWith(input, StringComparison.OrdinalIgnoreCase)))
-                {
-                    matchingWords.Add(word);
-                }
+               wordsToDestroy.Add(word);
             }
+         }
 
-            return matchingWords;
-        }
+         if (wordsToDestroy.Count > 0)
+         {
+            DestroyWords(wordsToDestroy, activeWords, scoreManager);
+         }
+      }
 
-        /// <summary>
-        /// Получает связанные слова (синонимы или антонимы)
-        /// </summary>
-        private List<string> GetRelatedWords(string word)
-        {
-            var result = new List<string>();
+      /// <summary>
+      /// Уничтожает слова и начисляет очки
+      /// </summary>
+      private void DestroyWords(List<FallingWord> wordsToDestroy, List<FallingWord> activeWords, ScoreManager scoreManager)
+      {
+         int totalScore = 0;
+         int totalDestroyed = wordsToDestroy.Count;
 
-            if (bonusType == "синоним")
+         // Уничтожаем основные слова
+         foreach (var word in wordsToDestroy)
+         {
+            word.Destroy();
+            totalScore += word.Word.Length * scoreManager.Multiplier;
+
+            // Уничтожаем связанные слова
+            var relatedWords = FindRelatedWords(word, activeWords);
+            foreach (var relatedWord in relatedWords)
             {
-                result.AddRange(synonymDictionary.GetSynonyms(word));
+               relatedWord.Destroy();
+               totalScore += relatedWord.Word.Length * scoreManager.Multiplier;
+               totalDestroyed++;
             }
-            else if (bonusType == "антоним")
+         }
+
+         // Уничтожаем случайные дополнительные слова
+         var additionalWords = GetRandomAdditionalWords(activeWords, 4 - totalDestroyed + 1);
+         foreach (var word in additionalWords)
+         {
+            word.Destroy();
+            totalScore += word.Word.Length * scoreManager.Multiplier;
+            totalDestroyed++;
+         }
+
+         WordDestroyedByAdditionalSystem?.Invoke(totalScore, totalDestroyed);
+         ResetInput();
+         UpdateTrackedWords(activeWords);
+      }
+
+      /// <summary>
+      /// Ищет связанные слова
+      /// </summary>
+      private List<FallingWord> FindRelatedWords(FallingWord sourceWord, List<FallingWord> activeWords)
+      {
+         var result = new List<FallingWord>();
+         var exactMatch = currentInput.ToLowerInvariant();
+
+         foreach (var word in activeWords)
+         {
+            if (word.IsDestroyed || word.IsBonus || word == sourceWord) continue;
+
+            var relatedWords = GetRelatedWords(word.Word);
+            if (relatedWords.Any(rw => rw.Equals(exactMatch, StringComparison.OrdinalIgnoreCase)))
             {
-                result.AddRange(synonymDictionary.GetAntonyms(word));
+               result.Add(word);
             }
+         }
 
-            return result.Select(w => w.ToLowerInvariant()).Distinct().ToList();
-        }
+         return result;
+      }
 
-        /// <summary>
-        /// Проверяет, введено ли полное слово
-        /// </summary>
-        private void CheckForCompleteInput(List<FallingWord> activeWords, ScoreManager scoreManager)
-        {
-            var wordsToDestroy = new List<FallingWord>();
+      /// <summary>
+      /// Получает случайные дополнительные слова
+      /// </summary>
+      private List<FallingWord> GetRandomAdditionalWords(List<FallingWord> activeWords, int count)
+      {
+         var regularWords = activeWords
+             .Where(w => !w.IsDestroyed && !w.IsBonus)
+             .ToList();
 
-            foreach (var word in trackedWords)
-            {
-                if (word.IsDestroyed) continue;
+         var result = new List<FallingWord>();
+         int takeCount = Math.Min(count, regularWords.Count);
 
-                var relatedWords = GetRelatedWords(word.Word);
-                if (relatedWords.Any(w => w.Equals(currentInput, StringComparison.OrdinalIgnoreCase)))
-                {
-                    wordsToDestroy.Add(word);
-                }
-            }
+         for (int i = 0; i < takeCount; i++)
+         {
+            int index = random.Next(regularWords.Count);
+            result.Add(regularWords[index]);
+            regularWords.RemoveAt(index);
+         }
 
-            if (wordsToDestroy.Count > 0)
-            {
-                DestroyWords(wordsToDestroy, activeWords, scoreManager);
-            }
-        }
+         return result;
+      }
 
-        /// <summary>
-        /// Уничтожает слова и начисляет очки
-        /// </summary>
-        private void DestroyWords(List<FallingWord> wordsToDestroy, List<FallingWord> activeWords, ScoreManager scoreManager)
-        {
-            int totalScore = 0;
-            int totalDestroyed = wordsToDestroy.Count;
+      /// <summary>
+      /// Сбрасывает состояние системы
+      /// </summary>
+      private void ResetState()
+      {
+         currentInput = "";
+         lastMatchingWords.Clear();
+         trackedWords.Clear();
+      }
 
-            // Уничтожаем основные слова
-            foreach (var word in wordsToDestroy)
-            {
-                word.Destroy();
-                totalScore += word.Word.Length * scoreManager.Multiplier;
+      /// <summary>
+      /// Сбрасывает текущий ввод
+      /// </summary>
+      private void ResetInput()
+      {
+         currentInput = "";
+         lastMatchingWords.Clear();
+      }
 
-                // Уничтожаем связанные слова
-                var relatedWords = FindRelatedWords(word, activeWords);
-                foreach (var relatedWord in relatedWords)
-                {
-                    relatedWord.Destroy();
-                    totalScore += relatedWord.Word.Length * scoreManager.Multiplier;
-                    totalDestroyed++;
-                }
-            }
+      /// <summary>
+      /// Обновляет текстовый блок с текущим вводом
+      /// </summary>
+      private void UpdateTextBlock()
+      {
+         if (synonymTextBlock == null) return;
 
-            WordDestroyedByAdditionalSystem?.Invoke(totalScore);
-            ResetInput();
-            UpdateTrackedWords(activeWords);
-            UpdateTextBlock();
-        }
+         if (isActive && !string.IsNullOrEmpty(currentInput))
+         {
+            synonymTextBlock.Text = currentInput.Length > 0
+                ? currentInput[currentInput.Length - 1].ToString()
+                : "";
+            synonymTextBlock.Visibility = System.Windows.Visibility.Visible;
+         }
+         else
+         {
+            synonymTextBlock.Text = "";
+            synonymTextBlock.Visibility = System.Windows.Visibility.Hidden;
+         }
+      }
 
-        /// <summary>
-        /// Ищет связанные слова
-        /// </summary>
-        private List<FallingWord> FindRelatedWords(FallingWord sourceWord, List<FallingWord> activeWords)
-        {
-            var result = new List<FallingWord>();
-            var exactMatch = currentInput.ToLowerInvariant();
-
-            foreach (var word in activeWords)
-            {
-                if (word.IsDestroyed || word.IsBonus || word == sourceWord) continue;
-
-                var relatedWords = GetRelatedWords(word.Word);
-                if (relatedWords.Any(rw => rw.Equals(exactMatch, StringComparison.OrdinalIgnoreCase)))
-                {
-                    result.Add(word);
-                }
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Сбрасывает состояние системы
-        /// </summary>
-        private void ResetState()
-        {
-            currentInput = "";
-            trackedWords.Clear();
-        }
-
-        /// <summary>
-        /// Сбрасывает текущий ввод
-        /// </summary>
-        private void ResetInput()
-        {
-            currentInput = "";
-        }
-
-        /// <summary>
-        /// Обновляет текстовый блок с текущим вводом
-        /// </summary>
-        private void UpdateTextBlock()
-        {
-            if (synonymTextBlock == null) return;
-
-            if (isActive && !string.IsNullOrEmpty(currentInput))
-            {
-                synonymTextBlock.Text = currentInput;
-            }
-            else
-            {
-                synonymTextBlock.Text = "";
-            }
-        }
-
-        #endregion
-    }
+      #endregion
+   }
 }

@@ -154,7 +154,21 @@ namespace Glossolalia
             {
                mainWindow.UpdateWordSpeed(clampedSpeed);
             }
+
+            if (speedSlider != null && Math.Abs(speedSlider.Value - clampedSpeed) > 0.05)
+            {
+               speedSlider.Value = clampedSpeed;
+            }
          }
+      }
+
+      /// <summary>
+      /// Получает текущую настройку скорости
+      /// </summary>
+      /// <returns>Текущая скорость слов</returns>
+      public double GetCurrentSpeed()
+      {
+         return currentSettings.SpeedSettings.WordSpeed;
       }
 
       #endregion

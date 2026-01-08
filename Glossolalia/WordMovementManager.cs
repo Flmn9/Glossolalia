@@ -1,4 +1,4 @@
-п»їusing System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -6,145 +6,145 @@ using System.Windows.Controls;
 
 namespace Glossolalia
 {
-    /// <summary>
-    /// РњРµРЅРµРґР¶РµСЂ РґРІРёР¶РµРЅРёСЏ СЃР»РѕРІ РЅР° РёРіСЂРѕРІРѕРј РїРѕР»Рµ
-    /// </summary>
-    public class WordMovementManager
-    {
-        #region РџРѕР»СЏ
+   /// <summary>
+   /// Менеджер движения слов на игровом поле
+   /// </summary>
+   public class WordMovementManager
+   {
+      #region Поля
 
-        private readonly List<FallingWord> activeWords;
-        private readonly Canvas gameCanvas;
+      private readonly List<FallingWord> activeWords;
+      private readonly Canvas gameCanvas;
 
-        #endregion
+      #endregion
 
-        #region РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ
+      #region Конструктор
 
-        /// <summary>
-        /// РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РјРµРЅРµРґР¶РµСЂР° РґРІРёР¶РµРЅРёСЏ
-        /// </summary>
-        /// <param name="activeWords">РЎРїРёСЃРѕРє Р°РєС‚РёРІРЅС‹С… СЃР»РѕРІ</param>
-        /// <param name="gameCanvas">РРіСЂРѕРІРѕР№ С…РѕР»СЃС‚</param>
-        public WordMovementManager(List<FallingWord> activeWords, Canvas gameCanvas)
-        {
-            this.activeWords = activeWords;
-            this.gameCanvas = gameCanvas;
-        }
+      /// <summary>
+      /// Конструктор менеджера движения
+      /// </summary>
+      /// <param name="activeWords">Список активных слов</param>
+      /// <param name="gameCanvas">Игровой холст</param>
+      public WordMovementManager(List<FallingWord> activeWords, Canvas gameCanvas)
+      {
+         this.activeWords = activeWords;
+         this.gameCanvas = gameCanvas;
+      }
 
-        #endregion
+      #endregion
 
-        #region РџСѓР±Р»РёС‡РЅС‹Рµ РјРµС‚РѕРґС‹
+      #region Публичные методы
 
-        /// <summary>
-        /// РћР±РЅРѕРІР»СЏРµС‚ РїРѕР»РѕР¶РµРЅРёРµ РІСЃРµС… СЃР»РѕРІ
-        /// </summary>
-        /// <param name="deltaTime">Р’СЂРµРјСЏ, РїСЂРѕС€РµРґС€РµРµ СЃ РїСЂРµРґС‹РґСѓС‰РµРіРѕ РєР°РґСЂР°</param>
-        public void UpdateWords(double deltaTime)
-        {
-            for (int i = activeWords.Count - 1; i >= 0; i--)
+      /// <summary>
+      /// Обновляет положение всех слов
+      /// </summary>
+      /// <param name="deltaTime">Время, прошедшее с предыдущего кадра</param>
+      public void UpdateWords(double deltaTime)
+      {
+         for (int i = activeWords.Count - 1; i >= 0; i--)
+         {
+            var word = activeWords[i];
+
+            if (word.IsDestroyed)
             {
-                var word = activeWords[i];
-
-                if (word.IsDestroyed)
-                {
-                    activeWords.RemoveAt(i);
-                    continue;
-                }
-
-                word.MoveDown(deltaTime);
-            }
-        }
-
-        /// <summary>
-        /// РџСЂРѕРІРµСЂСЏРµС‚ Рё СЂР°Р·СЂРµС€Р°РµС‚ СЃС‚РѕР»РєРЅРѕРІРµРЅРёСЏ РјРµР¶РґСѓ СЃР»РѕРІР°РјРё
-        /// </summary>
-        public void CheckAndResolveCollisions()
-        {
-            if (activeWords.Count < 2) return;
-
-            for (int i = 0; i < activeWords.Count; i++)
-            {
-                var word1 = activeWords[i];
-                if (word1.IsDestroyed) continue;
-
-                for (int j = i + 1; j < activeWords.Count; j++)
-                {
-                    var word2 = activeWords[j];
-                    if (word2.IsDestroyed) continue;
-
-                    if (word1.CollidesWith(word2))
-                    {
-                        ResolveCollision(word1, word2);
-                    }
-                }
-
-                RestoreSpeedIfNotColliding(word1);
-            }
-        }
-
-        /// <summary>
-        /// РџСЂРѕРІРµСЂСЏРµС‚ СѓСЃР»РѕРІРёСЏ РѕРєРѕРЅС‡Р°РЅРёСЏ РёРіСЂС‹
-        /// </summary>
-        /// <returns>True, РµСЃР»Рё РёРіСЂР° РґРѕР»Р¶РЅР° Р·Р°РІРµСЂС€РёС‚СЊСЃСЏ</returns>
-        public bool CheckGameOver()
-        {
-            double canvasHeight = gameCanvas.ActualHeight;
-
-            foreach (var word in activeWords)
-            {
-                if (word.IsDestroyed || word.IsBonus) continue;
-
-                if (word.ReachedBottom(canvasHeight))
-                {
-                    return true;
-                }
+               activeWords.RemoveAt(i);
+               continue;
             }
 
-            return false;
-        }
+            word.MoveDown(deltaTime);
+         }
+      }
 
-        #endregion
+      /// <summary>
+      /// Проверяет и разрешает столкновения между словами
+      /// </summary>
+      public void CheckAndResolveCollisions()
+      {
+         if (activeWords.Count < 2) return;
 
-        #region РџСЂРёРІР°С‚РЅС‹Рµ РјРµС‚РѕРґС‹
+         for (int i = 0; i < activeWords.Count; i++)
+         {
+            var word1 = activeWords[i];
+            if (word1.IsDestroyed) continue;
 
-        /// <summary>
-        /// Р Р°Р·СЂРµС€Р°РµС‚ СЃС‚РѕР»РєРЅРѕРІРµРЅРёРµ РјРµР¶РґСѓ РґРІСѓРјСЏ СЃР»РѕРІР°РјРё
-        /// </summary>
-        private void ResolveCollision(FallingWord word1, FallingWord word2)
-        {
-            if (word1.Bounds.Top < word2.Bounds.Top)
+            for (int j = i + 1; j < activeWords.Count; j++)
             {
-                word1.AdjustPositionForCollision(word2);
-            }
-            else
-            {
-                word2.AdjustPositionForCollision(word1);
-            }
-        }
+               var word2 = activeWords[j];
+               if (word2.IsDestroyed) continue;
 
-        /// <summary>
-        /// Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ СЃРєРѕСЂРѕСЃС‚СЊ СЃР»РѕРІР°, РµСЃР»Рё РѕРЅРѕ РЅРµ СЃС‚Р°Р»РєРёРІР°РµС‚СЃСЏ СЃ РґСЂСѓРіРёРјРё
-        /// </summary>
-        private void RestoreSpeedIfNotColliding(FallingWord word)
-        {
-            bool isColliding = false;
-            foreach (var other in activeWords)
-            {
-                if (other == word || other.IsDestroyed) continue;
-
-                if (word.CollidesWith(other))
-                {
-                    isColliding = true;
-                    break;
-                }
+               if (word1.CollidesWith(word2))
+               {
+                  ResolveCollision(word1, word2);
+               }
             }
 
-            if (!isColliding)
-            {
-                word.RestoreOriginalSpeed();
-            }
-        }
+            RestoreSpeedIfNotColliding(word1);
+         }
+      }
 
-        #endregion
-    }
+      /// <summary>
+      /// Проверяет условия окончания игры
+      /// </summary>
+      /// <returns>True, если игра должна завершиться</returns>
+      public bool CheckGameOver()
+      {
+         double canvasHeight = gameCanvas.ActualHeight;
+
+         foreach (var word in activeWords)
+         {
+            if (word.IsDestroyed || word.IsBonus) continue;
+
+            if (word.ReachedBottom(canvasHeight))
+            {
+               return true;
+            }
+         }
+
+         return false;
+      }
+
+      #endregion
+
+      #region Приватные методы
+
+      /// <summary>
+      /// Разрешает столкновение между двумя словами
+      /// </summary>
+      private void ResolveCollision(FallingWord word1, FallingWord word2)
+      {
+         if (word1.Bounds.Top < word2.Bounds.Top)
+         {
+            word1.AdjustPositionForCollision(word2);
+         }
+         else
+         {
+            word2.AdjustPositionForCollision(word1);
+         }
+      }
+
+      /// <summary>
+      /// Восстанавливает скорость слова, если оно не сталкивается с другими
+      /// </summary>
+      private void RestoreSpeedIfNotColliding(FallingWord word)
+      {
+         bool isColliding = false;
+         foreach (var other in activeWords)
+         {
+            if (other == word || other.IsDestroyed) continue;
+
+            if (word.CollidesWith(other))
+            {
+               isColliding = true;
+               break;
+            }
+         }
+
+         if (!isColliding)
+         {
+            word.RestoreOriginalSpeed();
+         }
+      }
+
+      #endregion
+   }
 }

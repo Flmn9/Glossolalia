@@ -1,4 +1,4 @@
-п»їusing System;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -6,376 +6,376 @@ using System.Windows.Shapes;
 
 namespace Glossolalia
 {
-    /// <summary>
-    /// РљР»Р°СЃСЃ, РїСЂРµРґСЃС‚Р°РІР»СЏСЋС‰РёР№ РїР°РґР°СЋС‰РµРµ СЃР»РѕРІРѕ РЅР° РёРіСЂРѕРІРѕРј РїРѕР»Рµ
-    /// </summary>
-    public class FallingWord
-    {
-        #region РџРѕР»СЏ
+   /// <summary>
+   /// Класс, представляющий падающее слово на игровом поле
+   /// </summary>
+   public class FallingWord
+   {
+      #region Поля
 
-        private TextBlock textBlock;
-        private Rectangle selectionRectangle;
-        private readonly Canvas parentCanvas;
-        private Size? cachedTextSize;
+      private TextBlock textBlock;
+      private Rectangle selectionRectangle;
+      private readonly Canvas parentCanvas;
+      private Size? cachedTextSize;
 
-        #endregion
+      #endregion
 
-        #region РЎРІРѕР№СЃС‚РІР°
+      #region Свойства
 
-        /// <summary>
-        /// РўРµРєСЃС‚ СЃР»РѕРІР°
-        /// </summary>
-        public string Word { get; private set; }
+      /// <summary>
+      /// Текст слова
+      /// </summary>
+      public string Word { get; private set; }
 
-        /// <summary>
-        /// РўРµРєСѓС‰Р°СЏ СЃРєРѕСЂРѕСЃС‚СЊ РїР°РґРµРЅРёСЏ
-        /// </summary>
-        public double Speed { get; private set; }
+      /// <summary>
+      /// Текущая скорость падения
+      /// </summary>
+      public double Speed { get; private set; }
 
-        /// <summary>
-        /// Р‘Р°Р·РѕРІР°СЏ СЃРєРѕСЂРѕСЃС‚СЊ РїР°РґРµРЅРёСЏ
-        /// </summary>
-        public double BaseSpeed { get; private set; }
+      /// <summary>
+      /// Базовая скорость падения
+      /// </summary>
+      public double BaseSpeed { get; private set; }
 
-        /// <summary>
-        /// РџРѕР·РёС†РёСЏ СЃР»РѕРІР° РЅР° С…РѕР»СЃС‚Рµ
-        /// </summary>
-        public Point Position { get; private set; }
+      /// <summary>
+      /// Позиция слова на холсте
+      /// </summary>
+      public Point Position { get; private set; }
 
-        /// <summary>
-        /// Р¤Р»Р°Рі, СѓРєР°Р·С‹РІР°СЋС‰РёР№, СЏРІР»СЏРµС‚СЃСЏ Р»Рё СЃР»РѕРІРѕ Р±РѕРЅСѓСЃРЅС‹Рј
-        /// </summary>
-        public bool IsBonus { get; private set; }
+      /// <summary>
+      /// Флаг, указывающий, является ли слово бонусным
+      /// </summary>
+      public bool IsBonus { get; private set; }
 
-        /// <summary>
-        /// РўРёРї Р±РѕРЅСѓСЃР° (РµСЃР»Рё СЃР»РѕРІРѕ Р±РѕРЅСѓСЃРЅРѕРµ)
-        /// </summary>
-        public string BonusType { get; private set; }
+      /// <summary>
+      /// Тип бонуса (если слово бонусное)
+      /// </summary>
+      public string BonusType { get; private set; }
 
-        /// <summary>
-        /// Р¦РІРµС‚ С‚РµРєСЃС‚Р° СЃР»РѕРІР°
-        /// </summary>
-        public Color WordColor { get; private set; }
+      /// <summary>
+      /// Цвет текста слова
+      /// </summary>
+      public Color WordColor { get; private set; }
 
-        /// <summary>
-        /// РљРѕР»РёС‡РµСЃС‚РІРѕ РІС‹РґРµР»РµРЅРЅС‹С… Р±СѓРєРІ
-        /// </summary>
-        public int SelectedLettersCount { get; private set; }
+      /// <summary>
+      /// Количество выделенных букв
+      /// </summary>
+      public int SelectedLettersCount { get; private set; }
 
-        /// <summary>
-        /// Р¤Р»Р°Рі, СѓРєР°Р·С‹РІР°СЋС‰РёР№, СѓРЅРёС‡С‚РѕР¶РµРЅРѕ Р»Рё СЃР»РѕРІРѕ
-        /// </summary>
-        public bool IsDestroyed { get; private set; }
+      /// <summary>
+      /// Флаг, указывающий, уничтожено ли слово
+      /// </summary>
+      public bool IsDestroyed { get; private set; }
 
-        /// <summary>
-        /// Р“СЂР°РЅРёС†С‹ СЃР»РѕРІР° РЅР° С…РѕР»СЃС‚Рµ
-        /// </summary>
-        public Rect Bounds
-        {
-            get
-            {
-                var textSize = MeasureTextSize();
-                return new Rect(Position.X, Position.Y, textSize.Width, textSize.Height);
-            }
-        }
+      /// <summary>
+      /// Границы слова на холсте
+      /// </summary>
+      public Rect Bounds
+      {
+         get
+         {
+            var textSize = MeasureTextSize();
+            return new Rect(Position.X, Position.Y, textSize.Width, textSize.Height);
+         }
+      }
 
-        #endregion
+      #endregion
 
-        #region РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ
+      #region Конструктор
 
-        /// <summary>
-        /// РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РїР°РґР°СЋС‰РµРіРѕ СЃР»РѕРІР°
-        /// </summary>
-        /// <param name="word">РўРµРєСЃС‚ СЃР»РѕРІР°</param>
-        /// <param name="baseSpeed">Р‘Р°Р·РѕРІР°СЏ СЃРєРѕСЂРѕСЃС‚СЊ РїР°РґРµРЅРёСЏ</param>
-        /// <param name="parentCanvas">РҐРѕР»СЃС‚ РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ</param>
-        /// <param name="isBonus">Р¤Р»Р°Рі Р±РѕРЅСѓСЃРЅРѕРіРѕ СЃР»РѕРІР°</param>
-        /// <param name="bonusType">РўРёРї Р±РѕРЅСѓСЃР°</param>
-        /// <param name="color">Р¦РІРµС‚ С‚РµРєСЃС‚Р°</param>
-        public FallingWord(string word, double baseSpeed, Canvas parentCanvas,
-                          bool isBonus = false, string bonusType = null, Color? color = null)
-        {
-            Word = word;
-            BaseSpeed = baseSpeed;
-            Speed = baseSpeed;
-            this.parentCanvas = parentCanvas;
-            IsBonus = isBonus;
-            BonusType = bonusType;
-            WordColor = color ?? Colors.Black;
+      /// <summary>
+      /// Конструктор падающего слова
+      /// </summary>
+      /// <param name="word">Текст слова</param>
+      /// <param name="baseSpeed">Базовая скорость падения</param>
+      /// <param name="parentCanvas">Холст для отображения</param>
+      /// <param name="isBonus">Флаг бонусного слова</param>
+      /// <param name="bonusType">Тип бонуса</param>
+      /// <param name="color">Цвет текста</param>
+      public FallingWord(string word, double baseSpeed, Canvas parentCanvas,
+                        bool isBonus = false, string bonusType = null, Color? color = null)
+      {
+         Word = word;
+         BaseSpeed = baseSpeed;
+         Speed = baseSpeed;
+         this.parentCanvas = parentCanvas;
+         IsBonus = isBonus;
+         BonusType = bonusType;
+         WordColor = color ?? Colors.Black;
 
-            InitializeUI();
-        }
+         InitializeUI();
+      }
 
-        #endregion
+      #endregion
 
-        #region РџСѓР±Р»РёС‡РЅС‹Рµ РјРµС‚РѕРґС‹
+      #region Публичные методы
 
-        /// <summary>
-        /// РћР±РЅРѕРІР»СЏРµС‚ РїРѕР·РёС†РёСЋ СЃР»РѕРІР° РЅР° С…РѕР»СЃС‚Рµ
-        /// </summary>
-        public void UpdatePosition()
-        {
-            if (IsDestroyed) return;
+      /// <summary>
+      /// Обновляет позицию слова на холсте
+      /// </summary>
+      public void UpdatePosition()
+      {
+         if (IsDestroyed) return;
 
-            Canvas.SetLeft(textBlock, Position.X);
-            Canvas.SetTop(textBlock, Position.Y);
+         Canvas.SetLeft(textBlock, Position.X);
+         Canvas.SetTop(textBlock, Position.Y);
 
-            UpdateSelection();
-            selectionRectangle.Visibility = SelectedLettersCount > 0
-                ? Visibility.Visible
-                : Visibility.Hidden;
-        }
+         UpdateSelection();
+         selectionRectangle.Visibility = SelectedLettersCount > 0
+             ? Visibility.Visible
+             : Visibility.Hidden;
+      }
 
-        /// <summary>
-        /// РџРµСЂРµРјРµС‰Р°РµС‚ СЃР»РѕРІРѕ РІРЅРёР·
-        /// </summary>
-        /// <param name="deltaTime">Р’СЂРµРјСЏ, РїСЂРѕС€РµРґС€РµРµ СЃ РїСЂРµРґС‹РґСѓС‰РµРіРѕ РєР°РґСЂР°</param>
-        public void MoveDown(double deltaTime)
-        {
-            if (IsDestroyed) return;
+      /// <summary>
+      /// Перемещает слово вниз
+      /// </summary>
+      /// <param name="deltaTime">Время, прошедшее с предыдущего кадра</param>
+      public void MoveDown(double deltaTime)
+      {
+         if (IsDestroyed) return;
 
-            double deltaY = Speed * deltaTime;
-            Position = new Point(Position.X, Position.Y + deltaY);
+         double deltaY = Speed * deltaTime;
+         Position = new Point(Position.X, Position.Y + deltaY);
+         UpdatePosition();
+      }
+
+      /// <summary>
+      /// Проверяет, достигло ли слово нижней границы холста
+      /// </summary>
+      /// <returns>True, если слово достигло нижней границы</returns>
+      public bool ReachedBottom(double canvasHeight)
+      {
+         return Bounds.Bottom >= canvasHeight;
+      }
+
+      /// <summary>
+      /// Устанавливает позицию слова на холсте
+      /// </summary>
+      public void SetPosition(double x, double y)
+      {
+         Position = new Point(x, y);
+         UpdatePosition();
+      }
+
+      /// <summary>
+      /// Корректирует позицию слова при столкновении с другим словом
+      /// </summary>
+      public void AdjustPositionForCollision(FallingWord otherWord)
+      {
+         if (this == otherWord || IsDestroyed || otherWord.IsDestroyed) return;
+
+         var thisBounds = Bounds;
+         var otherBounds = otherWord.Bounds;
+
+         if (thisBounds.Bottom > otherBounds.Top &&
+             thisBounds.Top < otherBounds.Bottom &&
+             thisBounds.IntersectsWith(otherBounds))
+         {
+            double newY = otherBounds.Top - thisBounds.Height;
+            Position = new Point(Position.X, newY);
+            Speed = otherWord.Speed;
             UpdatePosition();
-        }
+         }
+      }
 
-        /// <summary>
-        /// РџСЂРѕРІРµСЂСЏРµС‚, РґРѕСЃС‚РёРіР»Рѕ Р»Рё СЃР»РѕРІРѕ РЅРёР¶РЅРµР№ РіСЂР°РЅРёС†С‹ С…РѕР»СЃС‚Р°
-        /// </summary>
-        /// <returns>True, РµСЃР»Рё СЃР»РѕРІРѕ РґРѕСЃС‚РёРіР»Рѕ РЅРёР¶РЅРµР№ РіСЂР°РЅРёС†С‹</returns>
-        public bool ReachedBottom(double canvasHeight)
-        {
-            return Bounds.Bottom >= canvasHeight;
-        }
+      /// <summary>
+      /// Устанавливает новую скорость падения
+      /// </summary>
+      public void SetSpeed(double newSpeed)
+      {
+         Speed = newSpeed;
+      }
 
-        /// <summary>
-        /// РЈСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ РїРѕР·РёС†РёСЋ СЃР»РѕРІР° РЅР° С…РѕР»СЃС‚Рµ
-        /// </summary>
-        public void SetPosition(double x, double y)
-        {
-            Position = new Point(x, y);
+      /// <summary>
+      /// Обновляет базовую скорость падения
+      /// </summary>
+      public void UpdateBaseSpeed(double newBaseSpeed)
+      {
+         BaseSpeed = newBaseSpeed;
+      }
+
+      /// <summary>
+      /// Восстанавливает оригинальную скорость падения
+      /// </summary>
+      public void RestoreOriginalSpeed()
+      {
+         Speed = BaseSpeed;
+      }
+
+      /// <summary>
+      /// Проверяет столкновение с другим словом
+      /// </summary>
+      /// <returns>True, если слова пересекаются</returns>
+      public bool CollidesWith(FallingWord other)
+      {
+         if (this == other || IsDestroyed || other.IsDestroyed) return false;
+
+         var thisBounds = Bounds;
+         var otherBounds = other.Bounds;
+
+         thisBounds.Inflate(2, 2);
+         otherBounds.Inflate(2, 2);
+
+         return thisBounds.IntersectsWith(otherBounds);
+      }
+
+      /// <summary>
+      /// Выделяет следующую букву слова
+      /// </summary>
+      /// <returns>True, если выделение успешно</returns>
+      public bool SelectNextLetter()
+      {
+         if (SelectedLettersCount < Word.Length)
+         {
+            SelectedLettersCount++;
             UpdatePosition();
-        }
+            return true;
+         }
+         return false;
+      }
 
-        /// <summary>
-        /// РљРѕСЂСЂРµРєС‚РёСЂСѓРµС‚ РїРѕР·РёС†РёСЋ СЃР»РѕРІР° РїСЂРё СЃС‚РѕР»РєРЅРѕРІРµРЅРёРё СЃ РґСЂСѓРіРёРј СЃР»РѕРІРѕРј
-        /// </summary>
-        public void AdjustPositionForCollision(FallingWord otherWord)
-        {
-            if (this == otherWord || IsDestroyed || otherWord.IsDestroyed) return;
-
-            var thisBounds = Bounds;
-            var otherBounds = otherWord.Bounds;
-
-            if (thisBounds.Bottom > otherBounds.Top &&
-                thisBounds.Top < otherBounds.Bottom &&
-                thisBounds.IntersectsWith(otherBounds))
-            {
-                double newY = otherBounds.Top - thisBounds.Height;
-                Position = new Point(Position.X, newY);
-                Speed = otherWord.Speed;
-                UpdatePosition();
-            }
-        }
-
-        /// <summary>
-        /// РЈСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ РЅРѕРІСѓСЋ СЃРєРѕСЂРѕСЃС‚СЊ РїР°РґРµРЅРёСЏ
-        /// </summary>
-        public void SetSpeed(double newSpeed)
-        {
-            Speed = newSpeed;
-        }
-
-        /// <summary>
-        /// РћР±РЅРѕРІР»СЏРµС‚ Р±Р°Р·РѕРІСѓСЋ СЃРєРѕСЂРѕСЃС‚СЊ РїР°РґРµРЅРёСЏ
-        /// </summary>
-        public void UpdateBaseSpeed(double newBaseSpeed)
-        {
-            BaseSpeed = newBaseSpeed;
-        }
-
-        /// <summary>
-        /// Р’РѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ РѕСЂРёРіРёРЅР°Р»СЊРЅСѓСЋ СЃРєРѕСЂРѕСЃС‚СЊ РїР°РґРµРЅРёСЏ
-        /// </summary>
-        public void RestoreOriginalSpeed()
-        {
-            Speed = BaseSpeed;
-        }
-
-        /// <summary>
-        /// РџСЂРѕРІРµСЂСЏРµС‚ СЃС‚РѕР»РєРЅРѕРІРµРЅРёРµ СЃ РґСЂСѓРіРёРј СЃР»РѕРІРѕРј
-        /// </summary>
-        /// <returns>True, РµСЃР»Рё СЃР»РѕРІР° РїРµСЂРµСЃРµРєР°СЋС‚СЃСЏ</returns>
-        public bool CollidesWith(FallingWord other)
-        {
-            if (this == other || IsDestroyed || other.IsDestroyed) return false;
-
-            var thisBounds = Bounds;
-            var otherBounds = other.Bounds;
-
-            thisBounds.Inflate(2, 2);
-            otherBounds.Inflate(2, 2);
-
-            return thisBounds.IntersectsWith(otherBounds);
-        }
-
-        /// <summary>
-        /// Р’С‹РґРµР»СЏРµС‚ СЃР»РµРґСѓСЋС‰СѓСЋ Р±СѓРєРІСѓ СЃР»РѕРІР°
-        /// </summary>
-        /// <returns>True, РµСЃР»Рё РІС‹РґРµР»РµРЅРёРµ СѓСЃРїРµС€РЅРѕ</returns>
-        public bool SelectNextLetter()
-        {
-            if (SelectedLettersCount < Word.Length)
-            {
-                SelectedLettersCount++;
-                UpdatePosition();
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// РЎРЅРёРјР°РµС‚ РІС‹РґРµР»РµРЅРёРµ СЃ РїРѕСЃР»РµРґРЅРµР№ Р±СѓРєРІС‹
-        /// </summary>
-        public void DeselectLastLetter()
-        {
-            if (SelectedLettersCount > 0)
-            {
-                SelectedLettersCount--;
-                UpdatePosition();
-            }
-        }
-
-        /// <summary>
-        /// РЎР±СЂР°СЃС‹РІР°РµС‚ РІС‹РґРµР»РµРЅРёРµ Р±СѓРєРІ
-        /// </summary>
-        public void ResetSelection()
-        {
-            SelectedLettersCount = 0;
+      /// <summary>
+      /// Снимает выделение с последней буквы
+      /// </summary>
+      public void DeselectLastLetter()
+      {
+         if (SelectedLettersCount > 0)
+         {
+            SelectedLettersCount--;
             UpdatePosition();
-        }
+         }
+      }
 
-        /// <summary>
-        /// РџСЂРѕРІРµСЂСЏРµС‚, РїРѕР»РЅРѕСЃС‚СЊСЋ Р»Рё РІС‹РґРµР»РµРЅРѕ СЃР»РѕРІРѕ
-        /// </summary>
-        /// <returns>True, РµСЃР»Рё РІСЃРµ Р±СѓРєРІС‹ РІС‹РґРµР»РµРЅС‹</returns>
-        public bool IsFullySelected()
-        {
-            return SelectedLettersCount == Word.Length;
-        }
+      /// <summary>
+      /// Сбрасывает выделение букв
+      /// </summary>
+      public void ResetSelection()
+      {
+         SelectedLettersCount = 0;
+         UpdatePosition();
+      }
 
-        /// <summary>
-        /// РЈРЅРёС‡С‚РѕР¶Р°РµС‚ СЃР»РѕРІРѕ, СѓРґР°Р»СЏСЏ РµРіРѕ СЃ С…РѕР»СЃС‚Р°
-        /// </summary>
-        public void Destroy()
-        {
-            if (IsDestroyed) return;
+      /// <summary>
+      /// Проверяет, полностью ли выделено слово
+      /// </summary>
+      /// <returns>True, если все буквы выделены</returns>
+      public bool IsFullySelected()
+      {
+         return SelectedLettersCount == Word.Length;
+      }
 
-            IsDestroyed = true;
-            parentCanvas.Children.Remove(textBlock);
-            parentCanvas.Children.Remove(selectionRectangle);
-        }
+      /// <summary>
+      /// Уничтожает слово, удаляя его с холста
+      /// </summary>
+      public void Destroy()
+      {
+         if (IsDestroyed) return;
 
-        /// <summary>
-        /// РЈСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ РЅРѕРІС‹Р№ С‚РµРєСЃС‚ СЃР»РѕРІР°
-        /// </summary>
-        public void SetWord(string newWord)
-        {
-            Word = newWord;
-            textBlock.Text = newWord;
-            cachedTextSize = null;
-            UpdatePosition();
-        }
+         IsDestroyed = true;
+         parentCanvas.Children.Remove(textBlock);
+         parentCanvas.Children.Remove(selectionRectangle);
+      }
 
-        #endregion
+      /// <summary>
+      /// Устанавливает новый текст слова
+      /// </summary>
+      public void SetWord(string newWord)
+      {
+         Word = newWord;
+         textBlock.Text = newWord;
+         cachedTextSize = null;
+         UpdatePosition();
+      }
 
-        #region РџСЂРёРІР°С‚РЅС‹Рµ РјРµС‚РѕРґС‹
+      #endregion
 
-        /// <summary>
-        /// РРЅРёС†РёР°Р»РёР·РёСЂСѓРµС‚ UI СЌР»РµРјРµРЅС‚С‹ СЃР»РѕРІР°
-        /// </summary>
-        private void InitializeUI()
-        {
-            textBlock = new TextBlock
-            {
-                Text = Word,
-                FontFamily = new FontFamily("Consolas"),
-                FontSize = 24,
-                Foreground = new SolidColorBrush(WordColor),
-                HorizontalAlignment = HorizontalAlignment.Left,
-                VerticalAlignment = VerticalAlignment.Top,
-                CacheMode = new BitmapCache()
-            };
+      #region Приватные методы
 
-            selectionRectangle = new Rectangle
-            {
-                Fill = new SolidColorBrush(Color.FromArgb(100, 0, 120, 215)),
-                Stroke = new SolidColorBrush(Colors.DarkBlue),
-                StrokeThickness = 1,
-                Visibility = Visibility.Hidden,
-                RadiusX = 2,
-                RadiusY = 2,
-                CacheMode = new BitmapCache()
-            };
+      /// <summary>
+      /// Инициализирует UI элементы слова
+      /// </summary>
+      private void InitializeUI()
+      {
+         textBlock = new TextBlock
+         {
+            Text = Word,
+            FontFamily = new FontFamily("Consolas"),
+            FontSize = 24,
+            Foreground = new SolidColorBrush(WordColor),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Top,
+            CacheMode = new BitmapCache()
+         };
 
-            parentCanvas.Children.Add(selectionRectangle);
-            parentCanvas.Children.Add(textBlock);
-        }
+         selectionRectangle = new Rectangle
+         {
+            Fill = new SolidColorBrush(Color.FromArgb(100, 0, 120, 215)),
+            Stroke = new SolidColorBrush(Colors.DarkBlue),
+            StrokeThickness = 1,
+            Visibility = Visibility.Hidden,
+            RadiusX = 2,
+            RadiusY = 2,
+            CacheMode = new BitmapCache()
+         };
 
-        /// <summary>
-        /// РћР±РЅРѕРІР»СЏРµС‚ РѕС‚РѕР±СЂР°Р¶РµРЅРёРµ РІС‹РґРµР»РµРЅРёСЏ Р±СѓРєРІ
-        /// </summary>
-        private void UpdateSelection()
-        {
-            if (SelectedLettersCount <= 0) return;
+         parentCanvas.Children.Add(selectionRectangle);
+         parentCanvas.Children.Add(textBlock);
+      }
 
-            if (SelectedLettersCount > Word.Length)
-            {
-                SelectedLettersCount = Word.Length;
-            }
+      /// <summary>
+      /// Обновляет отображение выделения букв
+      /// </summary>
+      private void UpdateSelection()
+      {
+         if (SelectedLettersCount <= 0) return;
 
-            var selectedText = Word.Substring(0, SelectedLettersCount);
-            var formattedText = CreateFormattedText(selectedText);
+         if (SelectedLettersCount > Word.Length)
+         {
+            SelectedLettersCount = Word.Length;
+         }
 
-            selectionRectangle.Width = formattedText.Width + 4;
-            selectionRectangle.Height = formattedText.Height + 4;
-            Canvas.SetLeft(selectionRectangle, Position.X - 2);
-            Canvas.SetTop(selectionRectangle, Position.Y - 2);
-        }
+         var selectedText = Word.Substring(0, SelectedLettersCount);
+         var formattedText = CreateFormattedText(selectedText);
 
-        /// <summary>
-        /// РР·РјРµСЂСЏРµС‚ СЂР°Р·РјРµСЂ С‚РµРєСЃС‚Р° СЃР»РѕРІР°
-        /// </summary>
-        /// <returns>Р Р°Р·РјРµСЂ С‚РµРєСЃС‚Р°</returns>
-        private Size MeasureTextSize()
-        {
-            if (cachedTextSize.HasValue)
-            {
-                return cachedTextSize.Value;
-            }
+         selectionRectangle.Width = formattedText.Width + 4;
+         selectionRectangle.Height = formattedText.Height + 4;
+         Canvas.SetLeft(selectionRectangle, Position.X - 2);
+         Canvas.SetTop(selectionRectangle, Position.Y - 2);
+      }
 
-            var formattedText = CreateFormattedText(Word);
-            cachedTextSize = new Size(formattedText.Width, formattedText.Height);
+      /// <summary>
+      /// Измеряет размер текста слова
+      /// </summary>
+      /// <returns>Размер текста</returns>
+      private Size MeasureTextSize()
+      {
+         if (cachedTextSize.HasValue)
+         {
             return cachedTextSize.Value;
-        }
+         }
 
-        /// <summary>
-        /// РЎРѕР·РґР°РµС‚ С„РѕСЂРјР°С‚РёСЂРѕРІР°РЅРЅС‹Р№ С‚РµРєСЃС‚ РґР»СЏ РёР·РјРµСЂРµРЅРёСЏ
-        /// </summary>
-        /// <returns>Р¤РѕСЂРјР°С‚РёСЂРѕРІР°РЅРЅС‹Р№ С‚РµРєСЃС‚</returns>
-        private FormattedText CreateFormattedText(string text)
-        {
-            return new FormattedText(
-                text,
-                System.Globalization.CultureInfo.CurrentCulture,
-                FlowDirection.LeftToRight,
-                new Typeface(textBlock.FontFamily, textBlock.FontStyle,
-                           textBlock.FontWeight, textBlock.FontStretch),
-                textBlock.FontSize,
-                Brushes.Black,
-                VisualTreeHelper.GetDpi(parentCanvas).PixelsPerDip);
-        }
+         var formattedText = CreateFormattedText(Word);
+         cachedTextSize = new Size(formattedText.Width, formattedText.Height);
+         return cachedTextSize.Value;
+      }
 
-        #endregion
-    }
+      /// <summary>
+      /// Создает форматированный текст для измерения
+      /// </summary>
+      /// <returns>Форматированный текст</returns>
+      private FormattedText CreateFormattedText(string text)
+      {
+         return new FormattedText(
+             text,
+             System.Globalization.CultureInfo.CurrentCulture,
+             FlowDirection.LeftToRight,
+             new Typeface(textBlock.FontFamily, textBlock.FontStyle,
+                        textBlock.FontWeight, textBlock.FontStretch),
+             textBlock.FontSize,
+             Brushes.Black,
+             VisualTreeHelper.GetDpi(parentCanvas).PixelsPerDip);
+      }
+
+      #endregion
+   }
 }

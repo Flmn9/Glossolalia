@@ -1,29 +1,35 @@
-п»їusing System;
+using System;
 
 namespace Glossolalia
 {
    /// <summary>
-   /// РљР»Р°СЃСЃ РґР»СЏ РїСЂРµРґСЃС‚Р°РІР»РµРЅРёСЏ СЂР°Р·СЂРµС€РµРЅРёСЏ СЌРєСЂР°РЅР°
+   /// Класс для представления разрешения экрана
    /// </summary>
    public class Resolution
    {
+      #region Свойства
+
       /// <summary>
-      /// РЁРёСЂРёРЅР° СЂР°Р·СЂРµС€РµРЅРёСЏ РІ РїРёРєСЃРµР»СЏС….
+      /// Ширина разрешения в пикселях
       /// </summary>
       public int Width { get; set; }
 
       /// <summary>
-      /// Р’С‹СЃРѕС‚Р° СЂР°Р·СЂРµС€РµРЅРёСЏ РІ РїРёРєСЃРµР»СЏС….
+      /// Высота разрешения в пикселях
       /// </summary>
       public int Height { get; set; }
 
+      #endregion
+
+      #region Конструкторы
+
       /// <summary>
-      /// РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ.
+      /// Конструктор по умолчанию
       /// </summary>
       public Resolution() { }
 
       /// <summary>
-      /// РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ СЃ РїР°СЂР°РјРµС‚СЂР°РјРё.
+      /// Конструктор с параметрами ширины и высоты
       /// </summary>
       public Resolution(int width, int height)
       {
@@ -31,19 +37,24 @@ namespace Glossolalia
          Height = height;
       }
 
+      #endregion
+
+      #region Методы
+
       /// <summary>
-      /// Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃС‚СЂРѕРєРѕРІРѕРµ РїСЂРµРґСЃС‚Р°РІР»РµРЅРёРµ СЂР°Р·СЂРµС€РµРЅРёСЏ.
+      /// Возвращает строковое представление разрешения
       /// </summary>
-      /// <returns>РЎС‚СЂРѕРєР° РІ С„РѕСЂРјР°С‚Рµ "РЁРёСЂРёРЅР° x Р’С‹СЃРѕС‚Р°"</returns>
+      /// <returns>Строка в формате "Ширина x Высота"</returns>
       public override string ToString()
       {
          return $"{Width} x {Height}";
       }
 
       /// <summary>
-      /// РџСЂРµРѕР±СЂР°Р·СѓРµС‚ СЃС‚СЂРѕРєСѓ РІ С„РѕСЂРјР°С‚Рµ "РЁРёСЂРёРЅР° x Р’С‹СЃРѕС‚Р°" РІ РѕР±СЉРµРєС‚ Resolution.
+      /// Преобразует строку в формате "Ширина x Высота" в объект Resolution
       /// </summary>
-      /// <returns>РћР±СЉРµРєС‚ Resolution. Р’ СЃР»СѓС‡Р°Рµ РѕС€РёР±РєРё - СЂР°Р·СЂРµС€РµРЅРёРµ 800x600</returns>
+      /// <param name="resolutionString">Строка с разрешением</param>
+      /// <returns>Объект Resolution или разрешение 800x600 по умолчанию</returns>
       public static Resolution Parse(string resolutionString)
       {
          var parts = resolutionString.Split(new[] { " x " }, StringSplitOptions.RemoveEmptyEntries);
@@ -53,7 +64,9 @@ namespace Glossolalia
          {
             return new Resolution(width, height);
          }
-         return new Resolution(800, 600); // Р—РЅР°С‡РµРЅРёРµ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
+         return new Resolution(800, 600);
       }
+
+      #endregion
    }
 }

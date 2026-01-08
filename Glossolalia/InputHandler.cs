@@ -4,252 +4,247 @@ using System.Linq;
 
 namespace Glossolalia
 {
-    /// <summary>
-    /// Обработчик ввода с клавиатуры
-    /// </summary>
-    public class InputHandler
-    {
-        #region Константы
+   /// <summary>
+   /// Обработчик ввода с клавиатуры
+   /// </summary>
+   public class InputHandler
+   {
+      #region Константы
 
-        private const int REGISTER_BONUS_MULTIPLIER = 2;
+      private const int REGISTER_BONUS_MULTIPLIER = 2;
 
-        #endregion
+      #endregion
 
-        #region Поля
+      #region Поля
 
-        private readonly ScoreManager scoreManager;
-        private readonly List<FallingWord> activeWords;
-        private readonly AdditionalInputSystem additionalInputSystem;
-        private readonly BonusManager bonusManager;
+      private readonly ScoreManager scoreManager;
+      private readonly List<FallingWord> activeWords;
+      private readonly AdditionalInputSystem additionalInputSystem;
+      private readonly BonusManager bonusManager;
 
-        #endregion
+      #endregion
 
-        #region События
+      #region События
 
-        /// <summary>
-        /// Событие полного выделения слова
-        /// </summary>
-        public event Action<FallingWord> WordFullySelected;
+      /// <summary>
+      /// Событие полного выделения слова
+      /// </summary>
+      public event Action<FallingWord> WordFullySelected;
 
-        /// <summary>
-        /// Событие уничтожения слов
-        /// </summary>
-        public event Action<int> WordsDestroyed;
+      /// <summary>
+      /// Событие уничтожения слов
+      /// </summary>
+      public event Action<int> WordsDestroyed;
 
-        #endregion
+      #endregion
 
-        #region Конструктор
+      #region Конструктор
 
-        /// <summary>
-        /// Конструктор обработчика ввода
-        /// </summary>
-        /// <param name="scoreManager">Менеджер счета</param>
-        /// <param name="activeWords">Список активных слов</param>
-        /// <param name="additionalInputSystem">Дополнительная система ввода</param>
-        /// <param name="bonusManager">Менеджер бонусов</param>
-        public InputHandler(ScoreManager scoreManager, List<FallingWord> activeWords,
-                          AdditionalInputSystem additionalInputSystem, BonusManager bonusManager)
-        {
-            this.scoreManager = scoreManager;
-            this.activeWords = activeWords;
-            this.additionalInputSystem = additionalInputSystem;
-            this.bonusManager = bonusManager;
-        }
+      /// <summary>
+      /// Конструктор обработчика ввода
+      /// </summary>
+      /// <param name="scoreManager">Менеджер счета</param>
+      /// <param name="activeWords">Список активных слов</param>
+      /// <param name="additionalInputSystem">Дополнительная система ввода</param>
+      /// <param name="bonusManager">Менеджер бонусов</param>
+      public InputHandler(ScoreManager scoreManager, List<FallingWord> activeWords,
+                        AdditionalInputSystem additionalInputSystem, BonusManager bonusManager)
+      {
+         this.scoreManager = scoreManager;
+         this.activeWords = activeWords;
+         this.additionalInputSystem = additionalInputSystem;
+         this.bonusManager = bonusManager;
+      }
 
-        #endregion
+      #endregion
 
-        #region Публичные методы
+      #region Публичные методы
 
-        /// <summary>
-        /// Обрабатывает ввод символа с клавиатуры
-        /// </summary>
-        /// <param name="pressedChar">Введенный символ</param>
-        /// <param name="isRegisterCaseActive">Флаг активности бонуса регистра</param>
-        /// <returns>True, если ввод был обработан успешно</returns>
-        public bool HandleCharInput(char pressedChar, bool isRegisterCaseActive)
-        {
-            bool anyWordSelected = activeWords.Any(w => !w.IsDestroyed && w.SelectedLettersCount > 0);
-            bool foundMatch = false;
-            var wordsToRemove = new List<FallingWord>();
+      /// <summary>
+      /// Обрабатывает ввод символа с клавиатуры
+      /// </summary>
+      /// <param name="pressedChar">Введенный символ</param>
+      /// <param name="isRegisterCaseActive">Флаг активности бонуса регистра</param>
+      /// <returns>True, если ввод был обработан успешно</returns>
+      public bool HandleCharInput(char pressedChar, bool isRegisterCaseActive)
+      {
+         bool anyWordSelected = activeWords.Any(w => !w.IsDestroyed && w.SelectedLettersCount > 0);
+         bool foundMatch = false;
+         var wordsToRemove = new List<FallingWord>();
 
-            if (!anyWordSelected)
+         if (!anyWordSelected)
+         {
+            foundMatch = ProcessFirstLetterInput(pressedChar, isRegisterCaseActive);
+         }
+         else
+         {
+            foundMatch = ProcessNextLetterInput(pressedChar, isRegisterCaseActive, wordsToRemove);
+         }
+
+         // Уничтожение полностью выделенных слов
+         foreach (var word in wordsToRemove)
+         {
+            WordFullySelected?.Invoke(word);
+            WordsDestroyed?.Invoke(1);
+         }
+
+         return foundMatch;
+      }
+
+      /// <summary>
+      /// Обрабатывает нажатие Backspace
+      /// </summary>
+      public void HandleBackspace()
+      {
+         scoreManager.ResetMultiplier();
+
+         foreach (var word in activeWords)
+         {
+            if (!word.IsDestroyed && !word.IsBonus)
             {
-                foundMatch = ProcessFirstLetterInput(pressedChar, isRegisterCaseActive);
+               word.DeselectLastLetter();
+            }
+         }
+      }
+
+      /// <summary>
+      /// Вычисляет количество очков за ввод
+      /// </summary>
+      /// <param name="shouldAward">Нужно ли начислять очки</param>
+      /// <param name="isRegisterCaseActive">Флаг активности бонуса регистра</param>
+      /// <returns>Количество очков</returns>
+      public int CalculatePoints(bool shouldAward, bool isRegisterCaseActive)
+      {
+         if (!shouldAward) return 0;
+
+         int basePoints = 1;
+         if (isRegisterCaseActive)
+         {
+            basePoints *= REGISTER_BONUS_MULTIPLIER;
+         }
+
+         return basePoints;
+      }
+
+      /// <summary>
+      /// Проверяет, является ли символ допустимым для ввода
+      /// </summary>
+      /// <returns>True, если символ допустим</returns>
+      public static bool IsValidInputChar(char c)
+      {
+         return IsRussianLetter(c);
+      }
+
+      #endregion
+
+      #region Приватные методы
+
+      /// <summary>
+      /// Обрабатывает ввод первой буквы
+      /// </summary>
+      private bool ProcessFirstLetterInput(char pressedChar, bool isRegisterCaseActive)
+      {
+         bool foundMatch = false;
+
+         foreach (var word in activeWords)
+         {
+            if (word.IsDestroyed) continue;
+
+            if (StartsWithLetter(word, pressedChar, isRegisterCaseActive))
+            {
+               word.SelectNextLetter();
+               foundMatch = true;
+            }
+         }
+
+         return foundMatch;
+      }
+
+      /// <summary>
+      /// Обрабатывает ввод следующей буквы
+      /// </summary>
+      private bool ProcessNextLetterInput(char pressedChar, bool isRegisterCaseActive,
+                                        List<FallingWord> wordsToRemove)
+      {
+         bool foundMatch = false;
+         var selectedWords = activeWords
+             .Where(w => !w.IsDestroyed && w.SelectedLettersCount > 0)
+             .ToList();
+
+         foreach (var word in selectedWords)
+         {
+            if (NextLetterMatches(word, pressedChar, isRegisterCaseActive))
+            {
+               word.SelectNextLetter();
+               foundMatch = true;
+
+               if (word.IsFullySelected())
+               {
+                  wordsToRemove.Add(word);
+               }
             }
             else
             {
-                foundMatch = ProcessNextLetterInput(pressedChar, isRegisterCaseActive, wordsToRemove);
+               word.ResetSelection();
             }
+         }
 
-            // Уничтожение полностью выделенных слов
-            foreach (var word in wordsToRemove)
-            {
-                WordFullySelected?.Invoke(word);
-                WordsDestroyed?.Invoke(1);
-            }
-
-            return foundMatch;
-        }
-
-        /// <summary>
-        /// Обрабатывает нажатие Backspace
-        /// </summary>
-        public void HandleBackspace()
-        {
-            scoreManager.ResetMultiplier();
-
+         // Сброс выделения в невыделенных словах
+         if (foundMatch)
+         {
             foreach (var word in activeWords)
             {
-                if (!word.IsDestroyed && !word.IsBonus)
-                {
-                    word.DeselectLastLetter();
-                }
+               if (!word.IsDestroyed && word.SelectedLettersCount > 0 && !selectedWords.Contains(word))
+               {
+                  word.ResetSelection();
+               }
             }
+         }
 
-            if (additionalInputSystem.IsActive)
-            {
-                additionalInputSystem.HandleBackspace();
-            }
-        }
+         return foundMatch;
+      }
 
-        /// <summary>
-        /// Вычисляет количество очков за ввод
-        /// </summary>
-        /// <param name="shouldAward">Нужно ли начислять очки</param>
-        /// <param name="isRegisterCaseActive">Флаг активности бонуса регистра</param>
-        /// <returns>Количество очков</returns>
-        public int CalculatePoints(bool shouldAward, bool isRegisterCaseActive)
-        {
-            if (!shouldAward) return 0;
+      /// <summary>
+      /// Проверяет, начинается ли слово с указанной буквы
+      /// </summary>
+      private bool StartsWithLetter(FallingWord word, char pressedChar, bool isRegisterCaseActive)
+      {
+         if (string.IsNullOrEmpty(word.Word) || word.IsDestroyed)
+            return false;
 
-            int basePoints = 1;
-            if (isRegisterCaseActive)
-            {
-                basePoints *= REGISTER_BONUS_MULTIPLIER;
-            }
+         char firstChar = word.Word[0];
 
-            return basePoints;
-        }
+         return isRegisterCaseActive
+             ? firstChar == pressedChar
+             : char.ToUpperInvariant(firstChar) == char.ToUpperInvariant(pressedChar);
+      }
 
-        /// <summary>
-        /// Проверяет, является ли символ допустимым для ввода
-        /// </summary>
-        /// <returns>True, если символ допустим</returns>
-        public static bool IsValidInputChar(char c)
-        {
-            return IsRussianLetter(c);
-        }
+      /// <summary>
+      /// Проверяет, совпадает ли следующая буква слова с введенной
+      /// </summary>
+      private bool NextLetterMatches(FallingWord word, char pressedChar, bool isRegisterCaseActive)
+      {
+         if (string.IsNullOrEmpty(word.Word) || word.IsDestroyed ||
+             word.SelectedLettersCount >= word.Word.Length)
+            return false;
 
-        #endregion
+         char nextChar = word.Word[word.SelectedLettersCount];
 
-        #region Приватные методы
+         return isRegisterCaseActive
+             ? nextChar == pressedChar
+             : char.ToUpperInvariant(nextChar) == char.ToUpperInvariant(pressedChar);
+      }
 
-        /// <summary>
-        /// Обрабатывает ввод первой буквы
-        /// </summary>
-        private bool ProcessFirstLetterInput(char pressedChar, bool isRegisterCaseActive)
-        {
-            bool foundMatch = false;
+      /// <summary>
+      /// Проверяет, является ли символ русской буквой
+      /// </summary>
+      private static bool IsRussianLetter(char c)
+      {
+         return (c >= 'А' && c <= 'Я') ||
+                (c >= 'а' && c <= 'я') ||
+                c == 'Ё' || c == 'ё';
+      }
 
-            foreach (var word in activeWords)
-            {
-                if (word.IsDestroyed) continue;
-
-                if (StartsWithLetter(word, pressedChar, isRegisterCaseActive))
-                {
-                    word.SelectNextLetter();
-                    foundMatch = true;
-                }
-            }
-
-            return foundMatch;
-        }
-
-        /// <summary>
-        /// Обрабатывает ввод следующей буквы
-        /// </summary>
-        private bool ProcessNextLetterInput(char pressedChar, bool isRegisterCaseActive,
-                                          List<FallingWord> wordsToRemove)
-        {
-            bool foundMatch = false;
-            var selectedWords = activeWords
-                .Where(w => !w.IsDestroyed && w.SelectedLettersCount > 0)
-                .ToList();
-
-            foreach (var word in selectedWords)
-            {
-                if (NextLetterMatches(word, pressedChar, isRegisterCaseActive))
-                {
-                    word.SelectNextLetter();
-                    foundMatch = true;
-
-                    if (word.IsFullySelected())
-                    {
-                        wordsToRemove.Add(word);
-                    }
-                }
-                else
-                {
-                    word.ResetSelection();
-                }
-            }
-
-            // Сброс выделения в невыделенных словах
-            if (foundMatch)
-            {
-                foreach (var word in activeWords)
-                {
-                    if (!word.IsDestroyed && word.SelectedLettersCount > 0 && !selectedWords.Contains(word))
-                    {
-                        word.ResetSelection();
-                    }
-                }
-            }
-
-            return foundMatch;
-        }
-
-        /// <summary>
-        /// Проверяет, начинается ли слово с указанной буквы
-        /// </summary>
-        private bool StartsWithLetter(FallingWord word, char pressedChar, bool isRegisterCaseActive)
-        {
-            if (string.IsNullOrEmpty(word.Word) || word.IsDestroyed)
-                return false;
-
-            char firstChar = word.Word[0];
-
-            return isRegisterCaseActive
-                ? firstChar == pressedChar
-                : char.ToUpperInvariant(firstChar) == char.ToUpperInvariant(pressedChar);
-        }
-
-        /// <summary>
-        /// Проверяет, совпадает ли следующая буква слова с введенной
-        /// </summary>
-        private bool NextLetterMatches(FallingWord word, char pressedChar, bool isRegisterCaseActive)
-        {
-            if (string.IsNullOrEmpty(word.Word) || word.IsDestroyed ||
-                word.SelectedLettersCount >= word.Word.Length)
-                return false;
-
-            char nextChar = word.Word[word.SelectedLettersCount];
-
-            return isRegisterCaseActive
-                ? nextChar == pressedChar
-                : char.ToUpperInvariant(nextChar) == char.ToUpperInvariant(pressedChar);
-        }
-
-        /// <summary>
-        /// Проверяет, является ли символ русской буквой
-        /// </summary>
-        private static bool IsRussianLetter(char c)
-        {
-            return (c >= 'А' && c <= 'Я') ||
-                   (c >= 'а' && c <= 'я') ||
-                   c == 'Ё' || c == 'ё';
-        }
-
-        #endregion
-    }
+      #endregion
+   }
 }

@@ -1,326 +1,326 @@
-п»їusing System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
 namespace Glossolalia
 {
-    /// <summary>
-    /// РЎР»РѕРІР°СЂСЊ СЃРёРЅРѕРЅРёРјРѕРІ Рё Р°РЅС‚РѕРЅРёРјРѕРІ РґР»СЏ РёРіСЂС‹
-    /// </summary>
-    public class SynonymDictionary
-    {
-        #region РџРѕР»СЏ
+   /// <summary>
+   /// Словарь синонимов и антонимов для игры
+   /// </summary>
+   public class SynonymDictionary
+   {
+      #region Поля
 
-        private readonly List<string[]> synonymsA;
-        private readonly List<string[]> synonymsB;
-        private readonly Dictionary<string, (int LineIndex, int FileId)> wordIndex;
-        private readonly List<string> allWords;
+      private readonly List<string[]> synonymsA;
+      private readonly List<string[]> synonymsB;
+      private readonly Dictionary<string, (int LineIndex, int FileId)> wordIndex;
+      private readonly List<string> allWords;
 
-        #endregion
+      #endregion
 
-        #region РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ
+      #region Конструктор
 
-        /// <summary>
-        /// РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ СЃР»РѕРІР°СЂСЏ СЃРёРЅРѕРЅРёРјРѕРІ
-        /// </summary>
-        /// <param name="pathA">РџСѓС‚СЊ Рє С„Р°Р№Р»Сѓ СЃРѕ СЃР»РѕРІР°РјРё РіСЂСѓРїРїС‹ A</param>
-        /// <param name="pathB">РџСѓС‚СЊ Рє С„Р°Р№Р»Сѓ СЃРѕ СЃР»РѕРІР°РјРё РіСЂСѓРїРїС‹ B</param>
-        public SynonymDictionary(string pathA, string pathB)
-        {
-            synonymsA = new List<string[]>();
-            synonymsB = new List<string[]>();
-            allWords = new List<string>();
+      /// <summary>
+      /// Конструктор словаря синонимов
+      /// </summary>
+      /// <param name="pathA">Путь к файлу со словами группы A</param>
+      /// <param name="pathB">Путь к файлу со словами группы B</param>
+      public SynonymDictionary(string pathA, string pathB)
+      {
+         synonymsA = new List<string[]>();
+         synonymsB = new List<string[]>();
+         allWords = new List<string>();
 
-            LoadFiles(pathA, pathB);
-            wordIndex = BuildIndex();
-            BuildAllWordsList();
-        }
+         LoadFiles(pathA, pathB);
+         wordIndex = BuildIndex();
+         BuildAllWordsList();
+      }
 
-        #endregion
+      #endregion
 
-        #region РџСѓР±Р»РёС‡РЅС‹Рµ РјРµС‚РѕРґС‹
+      #region Публичные методы
 
-        /// <summary>
-        /// РџРѕР»СѓС‡РёС‚СЊ РІСЃРµ СЃРёРЅРѕРЅРёРјС‹ СЃР»РѕРІР°
-        /// </summary>
-        /// <returns>РЎРїРёСЃРѕРє СЃРёРЅРѕРЅРёРјРѕРІ РёР»Рё РїСѓСЃС‚РѕР№ СЃРїРёСЃРѕРє, РµСЃР»Рё СЃР»РѕРІРѕ РЅРµ РЅР°Р№РґРµРЅРѕ</returns>
-        public IReadOnlyList<string> GetSynonyms(string word)
-        {
-            string normalizedWord = word.ToLowerInvariant();
-            if (!wordIndex.TryGetValue(normalizedWord, out var info))
-                return Array.Empty<string>();
+      /// <summary>
+      /// Получить все синонимы слова
+      /// </summary>
+      /// <returns>Список синонимов или пустой список, если слово не найдено</returns>
+      public IReadOnlyList<string> GetSynonyms(string word)
+      {
+         string normalizedWord = word.ToLowerInvariant();
+         if (!wordIndex.TryGetValue(normalizedWord, out var info))
+            return Array.Empty<string>();
 
-            var source = info.FileId == 0 ? synonymsA : synonymsB;
-            return source[info.LineIndex];
-        }
+         var source = info.FileId == 0 ? synonymsA : synonymsB;
+         return source[info.LineIndex];
+      }
 
-        /// <summary>
-        /// РџРѕР»СѓС‡РёС‚СЊ РІСЃРµ Р°РЅС‚РѕРЅРёРјС‹ СЃР»РѕРІР°
-        /// </summary>
-        /// <returns>РЎРїРёСЃРѕРє Р°РЅС‚РѕРЅРёРјРѕРІ РёР»Рё РїСѓСЃС‚РѕР№ СЃРїРёСЃРѕРє, РµСЃР»Рё СЃР»РѕРІРѕ РЅРµ РЅР°Р№РґРµРЅРѕ</returns>
-        public IReadOnlyList<string> GetAntonyms(string word)
-        {
-            string normalizedWord = word.ToLowerInvariant();
-            if (!wordIndex.TryGetValue(normalizedWord, out var info))
-                return Array.Empty<string>();
+      /// <summary>
+      /// Получить все антонимы слова
+      /// </summary>
+      /// <returns>Список антонимов или пустой список, если слово не найдено</returns>
+      public IReadOnlyList<string> GetAntonyms(string word)
+      {
+         string normalizedWord = word.ToLowerInvariant();
+         if (!wordIndex.TryGetValue(normalizedWord, out var info))
+            return Array.Empty<string>();
 
-            var source = info.FileId == 0 ? synonymsB : synonymsA;
-            return source[info.LineIndex];
-        }
+         var source = info.FileId == 0 ? synonymsB : synonymsA;
+         return source[info.LineIndex];
+      }
 
-        /// <summary>
-        /// РџСЂРѕРІРµСЂРёС‚СЊ, СЏРІР»СЏСЋС‚СЃСЏ Р»Рё РґРІР° СЃР»РѕРІР° СЃРёРЅРѕРЅРёРјР°РјРё
-        /// </summary>
-        /// <returns>True, РµСЃР»Рё СЃР»РѕРІР° РЅР°С…РѕРґСЏС‚СЃСЏ РІ РѕРґРЅРѕРј С„Р°Р№Р»Рµ Рё РѕРґРЅРѕР№ СЃС‚СЂРѕРєРµ, РёРЅР°С‡Рµ False</returns>
-        public bool AreSynonyms(string word1, string word2)
-        {
-            string normalizedWord1 = word1.ToLowerInvariant();
-            string normalizedWord2 = word2.ToLowerInvariant();
+      /// <summary>
+      /// Проверить, являются ли два слова синонимами
+      /// </summary>
+      /// <returns>True, если слова находятся в одном файле и одной строке, иначе False</returns>
+      public bool AreSynonyms(string word1, string word2)
+      {
+         string normalizedWord1 = word1.ToLowerInvariant();
+         string normalizedWord2 = word2.ToLowerInvariant();
 
-            if (!wordIndex.TryGetValue(normalizedWord1, out var info1) ||
-                !wordIndex.TryGetValue(normalizedWord2, out var info2))
-                return false;
+         if (!wordIndex.TryGetValue(normalizedWord1, out var info1) ||
+             !wordIndex.TryGetValue(normalizedWord2, out var info2))
+            return false;
 
-            return info1.LineIndex == info2.LineIndex && info1.FileId == info2.FileId;
-        }
+         return info1.LineIndex == info2.LineIndex && info1.FileId == info2.FileId;
+      }
 
-        /// <summary>
-        /// РџСЂРѕРІРµСЂРёС‚СЊ, СЏРІР»СЏСЋС‚СЃСЏ Р»Рё РґРІР° СЃР»РѕРІР° Р°РЅС‚РѕРЅРёРјР°РјРё
-        /// </summary>
-        /// <returns>True, РµСЃР»Рё СЃР»РѕРІР° РЅР°С…РѕРґСЏС‚СЃСЏ РІ СЂР°Р·РЅС‹С… С„Р°Р№Р»Р°С…, РЅРѕ РѕРґРЅРѕР№ СЃС‚СЂРѕРєРµ, РёРЅР°С‡Рµ False</returns>
-        public bool AreAntonyms(string word1, string word2)
-        {
-            string normalizedWord1 = word1.ToLowerInvariant();
-            string normalizedWord2 = word2.ToLowerInvariant();
+      /// <summary>
+      /// Проверить, являются ли два слова антонимами
+      /// </summary>
+      /// <returns>True, если слова находятся в разных файлах, но одной строке, иначе False</returns>
+      public bool AreAntonyms(string word1, string word2)
+      {
+         string normalizedWord1 = word1.ToLowerInvariant();
+         string normalizedWord2 = word2.ToLowerInvariant();
 
-            if (!wordIndex.TryGetValue(normalizedWord1, out var info1) ||
-                !wordIndex.TryGetValue(normalizedWord2, out var info2))
-                return false;
+         if (!wordIndex.TryGetValue(normalizedWord1, out var info1) ||
+             !wordIndex.TryGetValue(normalizedWord2, out var info2))
+            return false;
 
-            return info1.LineIndex == info2.LineIndex && info1.FileId != info2.FileId;
-        }
+         return info1.LineIndex == info2.LineIndex && info1.FileId != info2.FileId;
+      }
 
-        /// <summary>
-        /// РќР°Р№С‚Рё СЃР»СѓС‡Р°Р№РЅС‹Р№ СЃРёРЅРѕРЅРёРј (РєСЂРѕРјРµ СЃР°РјРѕРіРѕ СЃР»РѕРІР°)
-        /// </summary>
-        /// <returns>РЎР»СѓС‡Р°Р№РЅС‹Р№ СЃРёРЅРѕРЅРёРј РёР»Рё null, РµСЃР»Рё РЅРµС‚ РґСЂСѓРіРёС… СЃРёРЅРѕРЅРёРјРѕРІ</returns>
-        public string GetRandomSynonym(string word, Random random)
-        {
-            var synonyms = GetSynonyms(word);
-            if (synonyms.Count <= 1) return null;
+      /// <summary>
+      /// Найти случайный синоним (кроме самого слова)
+      /// </summary>
+      /// <returns>Случайный синоним или null, если нет других синонимов</returns>
+      public string GetRandomSynonym(string word, Random random)
+      {
+         var synonyms = GetSynonyms(word);
+         if (synonyms.Count <= 1) return null;
 
-            string result;
-            do
+         string result;
+         do
+         {
+            result = synonyms[random.Next(synonyms.Count)];
+         } while (result.ToLowerInvariant() == word.ToLowerInvariant() && synonyms.Count > 1);
+
+         return result;
+      }
+
+      /// <summary>
+      /// Найти случайный антоним
+      /// </summary>
+      /// <returns>Случайный антоним или null, если нет антонимов</returns>
+      public string GetRandomAntonym(string word, Random random)
+      {
+         var antonyms = GetAntonyms(word);
+         if (antonyms.Count == 0) return null;
+
+         return antonyms[random.Next(antonyms.Count)];
+      }
+
+      /// <summary>
+      /// Получить случайное слово из словаря
+      /// </summary>
+      /// <returns>Случайное слово</returns>
+      public string GetRandomWord(Random random)
+      {
+         if (allWords.Count == 0) return "СЛОВО";
+
+         return allWords[random.Next(allWords.Count)];
+      }
+
+      /// <summary>
+      /// Получить случайное слово из указанного файла
+      /// </summary>
+      /// <param name="fileId">Идентификатор файла (0 - файл A, 1 - файл B)</param>
+      /// <param name="random">Генератор случайных чисел</param>
+      /// <returns>Случайное слово</returns>
+      public string GetRandomWordFromFile(int fileId, Random random)
+      {
+         var source = fileId == 0 ? synonymsA : synonymsB;
+         if (source.Count == 0) return "СЛОВО";
+
+         int lineIndex = random.Next(source.Count);
+         var words = source[lineIndex];
+
+         return words.Length > 0 ? words[random.Next(words.Length)] : "СЛОВО";
+      }
+
+      /// <summary>
+      /// Получить все слова из словаря
+      /// </summary>
+      /// <returns>Список всех слов</returns>
+      public IReadOnlyList<string> GetAllWords()
+      {
+         return allWords.AsReadOnly();
+      }
+
+      /// <summary>
+      /// Получить слова из конкретной строки и файла
+      /// </summary>
+      /// <returns>Список слов из указанной строки</returns>
+      public IReadOnlyList<string> GetWordsFromLine(int fileId, int lineIndex)
+      {
+         var source = fileId == 0 ? synonymsA : synonymsB;
+         if (lineIndex < 0 || lineIndex >= source.Count)
+            return Array.Empty<string>();
+
+         return source[lineIndex];
+      }
+
+      #endregion
+
+      #region Свойства
+
+      /// <summary>
+      /// Общее количество уникальных слов в словаре
+      /// </summary>
+      public int TotalWords => allWords.Count;
+
+      /// <summary>
+      /// Количество синонимических пар (строк)
+      /// Одна строка включает слова из обоих файлов
+      /// </summary>
+      public int SynonymPairsCount => Math.Min(synonymsA.Count, synonymsB.Count);
+
+      #endregion
+
+      #region Приватные методы
+
+      /// <summary>
+      /// Загружает данные из двух файлов построчно
+      /// </summary>
+      /// <remarks>
+      /// Предполагается, что файлы имеют одинаковое количество строк
+      /// и строки соответствуют друг другу по номеру
+      /// </remarks>
+      private void LoadFiles(string pathA, string pathB)
+      {
+         try
+         {
+            using (var readerA = new StreamReader(pathA))
+            using (var readerB = new StreamReader(pathB))
             {
-                result = synonyms[random.Next(synonyms.Count)];
-            } while (result.ToLowerInvariant() == word.ToLowerInvariant() && synonyms.Count > 1);
+               string lineA, lineB;
+               // Читаем оба файла одновременно, пока есть строки в обоих файлах
+               while ((lineA = readerA.ReadLine()) != null &&
+                      (lineB = readerB.ReadLine()) != null)
+               {
+                  // Разбиваем строки на слова и добавляем в соответствующие списки
+                  var wordsA = SplitLine(lineA);
+                  var wordsB = SplitLine(lineB);
 
-            return result;
-        }
-
-        /// <summary>
-        /// РќР°Р№С‚Рё СЃР»СѓС‡Р°Р№РЅС‹Р№ Р°РЅС‚РѕРЅРёРј
-        /// </summary>
-        /// <returns>РЎР»СѓС‡Р°Р№РЅС‹Р№ Р°РЅС‚РѕРЅРёРј РёР»Рё null, РµСЃР»Рё РЅРµС‚ Р°РЅС‚РѕРЅРёРјРѕРІ</returns>
-        public string GetRandomAntonym(string word, Random random)
-        {
-            var antonyms = GetAntonyms(word);
-            if (antonyms.Count == 0) return null;
-
-            return antonyms[random.Next(antonyms.Count)];
-        }
-
-        /// <summary>
-        /// РџРѕР»СѓС‡РёС‚СЊ СЃР»СѓС‡Р°Р№РЅРѕРµ СЃР»РѕРІРѕ РёР· СЃР»РѕРІР°СЂСЏ
-        /// </summary>
-        /// <returns>РЎР»СѓС‡Р°Р№РЅРѕРµ СЃР»РѕРІРѕ</returns>
-        public string GetRandomWord(Random random)
-        {
-            if (allWords.Count == 0) return "РЎР›РћР’Рћ";
-
-            return allWords[random.Next(allWords.Count)];
-        }
-
-        /// <summary>
-        /// РџРѕР»СѓС‡РёС‚СЊ СЃР»СѓС‡Р°Р№РЅРѕРµ СЃР»РѕРІРѕ РёР· СѓРєР°Р·Р°РЅРЅРѕРіРѕ С„Р°Р№Р»Р°
-        /// </summary>
-        /// <param name="fileId">РРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ С„Р°Р№Р»Р° (0 - С„Р°Р№Р» A, 1 - С„Р°Р№Р» B)</param>
-        /// <param name="random">Р“РµРЅРµСЂР°С‚РѕСЂ СЃР»СѓС‡Р°Р№РЅС‹С… С‡РёСЃРµР»</param>
-        /// <returns>РЎР»СѓС‡Р°Р№РЅРѕРµ СЃР»РѕРІРѕ</returns>
-        public string GetRandomWordFromFile(int fileId, Random random)
-        {
-            var source = fileId == 0 ? synonymsA : synonymsB;
-            if (source.Count == 0) return "РЎР›РћР’Рћ";
-
-            int lineIndex = random.Next(source.Count);
-            var words = source[lineIndex];
-
-            return words.Length > 0 ? words[random.Next(words.Length)] : "РЎР›РћР’Рћ";
-        }
-
-        /// <summary>
-        /// РџРѕР»СѓС‡РёС‚СЊ РІСЃРµ СЃР»РѕРІР° РёР· СЃР»РѕРІР°СЂСЏ
-        /// </summary>
-        /// <returns>РЎРїРёСЃРѕРє РІСЃРµС… СЃР»РѕРІ</returns>
-        public IReadOnlyList<string> GetAllWords()
-        {
-            return allWords.AsReadOnly();
-        }
-
-        /// <summary>
-        /// РџРѕР»СѓС‡РёС‚СЊ СЃР»РѕРІР° РёР· РєРѕРЅРєСЂРµС‚РЅРѕР№ СЃС‚СЂРѕРєРё Рё С„Р°Р№Р»Р°
-        /// </summary>
-        /// <returns>РЎРїРёСЃРѕРє СЃР»РѕРІ РёР· СѓРєР°Р·Р°РЅРЅРѕР№ СЃС‚СЂРѕРєРё</returns>
-        public IReadOnlyList<string> GetWordsFromLine(int fileId, int lineIndex)
-        {
-            var source = fileId == 0 ? synonymsA : synonymsB;
-            if (lineIndex < 0 || lineIndex >= source.Count)
-                return Array.Empty<string>();
-
-            return source[lineIndex];
-        }
-
-        #endregion
-
-        #region РЎРІРѕР№СЃС‚РІР°
-
-        /// <summary>
-        /// РћР±С‰РµРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СѓРЅРёРєР°Р»СЊРЅС‹С… СЃР»РѕРІ РІ СЃР»РѕРІР°СЂРµ
-        /// </summary>
-        public int TotalWords => allWords.Count;
-
-        /// <summary>
-        /// РљРѕР»РёС‡РµСЃС‚РІРѕ СЃРёРЅРѕРЅРёРјРёС‡РµСЃРєРёС… РїР°СЂ (СЃС‚СЂРѕРє)
-        /// РћРґРЅР° СЃС‚СЂРѕРєР° РІРєР»СЋС‡Р°РµС‚ СЃР»РѕРІР° РёР· РѕР±РѕРёС… С„Р°Р№Р»РѕРІ
-        /// </summary>
-        public int SynonymPairsCount => Math.Min(synonymsA.Count, synonymsB.Count);
-
-        #endregion
-
-        #region РџСЂРёРІР°С‚РЅС‹Рµ РјРµС‚РѕРґС‹
-
-        /// <summary>
-        /// Р—Р°РіСЂСѓР¶Р°РµС‚ РґР°РЅРЅС‹Рµ РёР· РґРІСѓС… С„Р°Р№Р»РѕРІ РїРѕСЃС‚СЂРѕС‡РЅРѕ
-        /// </summary>
-        /// <remarks>
-        /// РџСЂРµРґРїРѕР»Р°РіР°РµС‚СЃСЏ, С‡С‚Рѕ С„Р°Р№Р»С‹ РёРјРµСЋС‚ РѕРґРёРЅР°РєРѕРІРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СЃС‚СЂРѕРє
-        /// Рё СЃС‚СЂРѕРєРё СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‚ РґСЂСѓРі РґСЂСѓРіСѓ РїРѕ РЅРѕРјРµСЂСѓ
-        /// </remarks>
-        private void LoadFiles(string pathA, string pathB)
-        {
-            try
-            {
-                using (var readerA = new StreamReader(pathA))
-                using (var readerB = new StreamReader(pathB))
-                {
-                    string lineA, lineB;
-                    // Р§РёС‚Р°РµРј РѕР±Р° С„Р°Р№Р»Р° РѕРґРЅРѕРІСЂРµРјРµРЅРЅРѕ, РїРѕРєР° РµСЃС‚СЊ СЃС‚СЂРѕРєРё РІ РѕР±РѕРёС… С„Р°Р№Р»Р°С…
-                    while ((lineA = readerA.ReadLine()) != null &&
-                           (lineB = readerB.ReadLine()) != null)
-                    {
-                        // Р Р°Р·Р±РёРІР°РµРј СЃС‚СЂРѕРєРё РЅР° СЃР»РѕРІР° Рё РґРѕР±Р°РІР»СЏРµРј РІ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёРµ СЃРїРёСЃРєРё
-                        var wordsA = SplitLine(lineA);
-                        var wordsB = SplitLine(lineB);
-
-                        // РџСЂРѕРІРµСЂСЏРµРј, С‡С‚Рѕ СЃС‚СЂРѕРєРё РЅРµ РїСѓСЃС‚С‹Рµ
-                        if (wordsA.Length > 0 && wordsB.Length > 0)
-                        {
-                            synonymsA.Add(wordsA);
-                            synonymsB.Add(wordsB);
-                        }
-                    }
-                }
+                  // Проверяем, что строки не пустые
+                  if (wordsA.Length > 0 && wordsB.Length > 0)
+                  {
+                     synonymsA.Add(wordsA);
+                     synonymsB.Add(wordsB);
+                  }
+               }
             }
-            catch (Exception)
+         }
+         catch (Exception)
+         {
+            // В случае ошибки загрузки словарь останется пустым
+         }
+      }
+
+      /// <summary>
+      /// Разбивает строку на слова, используя пробел как разделитель
+      /// </summary>
+      /// <returns>Массив слов из строки</returns>
+      private string[] SplitLine(string line)
+      {
+         return line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+             .Select(w => w.Trim())
+             .Where(w => !string.IsNullOrEmpty(w))
+             .ToArray();
+      }
+
+      /// <summary>
+      /// Строит индекс слов для быстрого поиска
+      /// </summary>
+      /// <returns>Словарь индекса для быстрого поиска слов</returns>
+      private Dictionary<string, (int, int)> BuildIndex()
+      {
+         var index = new Dictionary<string, (int, int)>();
+
+         // Индексируем слова из файла A (идентификатор файла: 0)
+         for (int i = 0; i < synonymsA.Count; i++)
+         {
+            foreach (var word in synonymsA[i])
             {
-                // Р’ СЃР»СѓС‡Р°Рµ РѕС€РёР±РєРё Р·Р°РіСЂСѓР·РєРё СЃР»РѕРІР°СЂСЊ РѕСЃС‚Р°РЅРµС‚СЃСЏ РїСѓСЃС‚С‹Рј
+               string normalizedWord = word.ToLowerInvariant();
+               if (!index.ContainsKey(normalizedWord))
+               {
+                  index[normalizedWord] = (i, 0);
+               }
             }
-        }
+         }
 
-        /// <summary>
-        /// Р Р°Р·Р±РёРІР°РµС‚ СЃС‚СЂРѕРєСѓ РЅР° СЃР»РѕРІР°, РёСЃРїРѕР»СЊР·СѓСЏ РїСЂРѕР±РµР» РєР°Рє СЂР°Р·РґРµР»РёС‚РµР»СЊ
-        /// </summary>
-        /// <returns>РњР°СЃСЃРёРІ СЃР»РѕРІ РёР· СЃС‚СЂРѕРєРё</returns>
-        private string[] SplitLine(string line)
-        {
-            return line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(w => w.Trim())
-                .Where(w => !string.IsNullOrEmpty(w))
-                .ToArray();
-        }
-
-        /// <summary>
-        /// РЎС‚СЂРѕРёС‚ РёРЅРґРµРєСЃ СЃР»РѕРІ РґР»СЏ Р±С‹СЃС‚СЂРѕРіРѕ РїРѕРёСЃРєР°
-        /// </summary>
-        /// <returns>РЎР»РѕРІР°СЂСЊ РёРЅРґРµРєСЃР° РґР»СЏ Р±С‹СЃС‚СЂРѕРіРѕ РїРѕРёСЃРєР° СЃР»РѕРІ</returns>
-        private Dictionary<string, (int, int)> BuildIndex()
-        {
-            var index = new Dictionary<string, (int, int)>();
-
-            // РРЅРґРµРєСЃРёСЂСѓРµРј СЃР»РѕРІР° РёР· С„Р°Р№Р»Р° A (РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ С„Р°Р№Р»Р°: 0)
-            for (int i = 0; i < synonymsA.Count; i++)
+         // Индексируем слова из файла B (идентификатор файла: 1)
+         for (int i = 0; i < synonymsB.Count; i++)
+         {
+            foreach (var word in synonymsB[i])
             {
-                foreach (var word in synonymsA[i])
-                {
-                    string normalizedWord = word.ToLowerInvariant();
-                    if (!index.ContainsKey(normalizedWord))
-                    {
-                        index[normalizedWord] = (i, 0);
-                    }
-                }
+               string normalizedWord = word.ToLowerInvariant();
+               if (!index.ContainsKey(normalizedWord))
+               {
+                  index[normalizedWord] = (i, 1);
+               }
             }
+         }
 
-            // РРЅРґРµРєСЃРёСЂСѓРµРј СЃР»РѕРІР° РёР· С„Р°Р№Р»Р° B (РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ С„Р°Р№Р»Р°: 1)
-            for (int i = 0; i < synonymsB.Count; i++)
+         return index;
+      }
+
+      /// <summary>
+      /// Строит список всех уникальных слов
+      /// </summary>
+      private void BuildAllWordsList()
+      {
+         allWords.Clear();
+
+         // Добавляем все слова из файла A
+         foreach (var wordArray in synonymsA)
+         {
+            foreach (var word in wordArray)
             {
-                foreach (var word in synonymsB[i])
-                {
-                    string normalizedWord = word.ToLowerInvariant();
-                    if (!index.ContainsKey(normalizedWord))
-                    {
-                        index[normalizedWord] = (i, 1);
-                    }
-                }
+               string normalizedWord = word.ToLowerInvariant();
+               if (!allWords.Contains(normalizedWord))
+               {
+                  allWords.Add(normalizedWord);
+               }
             }
+         }
 
-            return index;
-        }
-
-        /// <summary>
-        /// РЎС‚СЂРѕРёС‚ СЃРїРёСЃРѕРє РІСЃРµС… СѓРЅРёРєР°Р»СЊРЅС‹С… СЃР»РѕРІ
-        /// </summary>
-        private void BuildAllWordsList()
-        {
-            allWords.Clear();
-
-            // Р”РѕР±Р°РІР»СЏРµРј РІСЃРµ СЃР»РѕРІР° РёР· С„Р°Р№Р»Р° A
-            foreach (var wordArray in synonymsA)
+         // Добавляем все слова из файла B
+         foreach (var wordArray in synonymsB)
+         {
+            foreach (var word in wordArray)
             {
-                foreach (var word in wordArray)
-                {
-                    string normalizedWord = word.ToLowerInvariant();
-                    if (!allWords.Contains(normalizedWord))
-                    {
-                        allWords.Add(normalizedWord);
-                    }
-                }
+               string normalizedWord = word.ToLowerInvariant();
+               if (!allWords.Contains(normalizedWord))
+               {
+                  allWords.Add(normalizedWord);
+               }
             }
+         }
+      }
 
-            // Р”РѕР±Р°РІР»СЏРµРј РІСЃРµ СЃР»РѕРІР° РёР· С„Р°Р№Р»Р° B
-            foreach (var wordArray in synonymsB)
-            {
-                foreach (var word in wordArray)
-                {
-                    string normalizedWord = word.ToLowerInvariant();
-                    if (!allWords.Contains(normalizedWord))
-                    {
-                        allWords.Add(normalizedWord);
-                    }
-                }
-            }
-        }
-
-        #endregion
-    }
+      #endregion
+   }
 }

@@ -1,188 +1,179 @@
-п»їusing System;
-using System.Windows;
-using System.Windows.Controls;
-
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace Glossolalia
 {
-    /// <summary>
-    /// РњРµРЅРµРґР¶РµСЂ РёРЅС‚РµСЂС„РµР№СЃР° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
-    /// </summary>
-    public class UIManager
-    {
-        #region РџРѕР»СЏ
+   /// <summary>
+   /// Менеджер интерфейса пользователя
+   /// </summary>
+   public class UIManager
+   {
+      #region Поля
 
-        private readonly ScrollViewer settingsScrollViewer;
-        private readonly ScrollViewer rulesScrollViewer;
-        private readonly UIElement mainMenuContainer;
-        private readonly UIElement gameContainer;
-        private readonly TextBlock scoreText;
-        private readonly TextBlock timeText;
-        private readonly UIElement glossolaliaLabel;
-        private readonly UIElement gameCanvas;
-        private readonly UIElement gameOverStackPanel;
-        private readonly TextBlock multiplierText;
+      private readonly ScrollViewer settingsScrollViewer;
+      private readonly ScrollViewer rulesScrollViewer;
+      private readonly UIElement mainMenuContainer;
+      private readonly UIElement gameContainer;
+      private readonly TextBlock scoreText;
+      private readonly TextBlock timeText;
+      private readonly UIElement glossolaliaLabel;
+      private readonly UIElement gameCanvas;
+      private readonly UIElement gameOverStackPanel;
+      private readonly TextBlock multiplierText;
 
-        #endregion
+      #endregion
 
-        #region РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ
+      #region Конструктор
 
-        /// <summary>
-        /// РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ. РРЅРёС†РёР°Р»РёР·РёСЂСѓРµС‚ СЃСЃС‹Р»РєРё РЅР° СЌР»РµРјРµРЅС‚С‹ UI
-        /// </summary>
-        /// <param name="settingsScrollViewer">ScrollViewer РЅР°СЃС‚СЂРѕРµРє</param>
-        /// <param name="rulesScrollViewer">ScrollViewer РїСЂР°РІРёР»</param>
-        /// <param name="mainMenuContainer">РљРѕРЅС‚РµР№РЅРµСЂ РіР»Р°РІРЅРѕРіРѕ РјРµРЅСЋ</param>
-        /// <param name="gameContainer">РљРѕРЅС‚РµР№РЅРµСЂ РёРіСЂРѕРІРѕРіРѕ РёРЅС‚РµСЂС„РµР№СЃР°</param>
-        /// <param name="scoreText">РўРµРєСЃС‚РѕРІС‹Р№ Р±Р»РѕРє СЃС‡РµС‚Р°</param>
-        /// <param name="timeText">РўРµРєСЃС‚РѕРІС‹Р№ Р±Р»РѕРє РІСЂРµРјРµРЅРё</param>
-        /// <param name="glossolaliaLabel">Р—Р°РіРѕР»РѕРІРѕРє РёРіСЂС‹</param>
-        /// <param name="gameCanvas">РРіСЂРѕРІРѕР№ С…РѕР»СЃС‚</param>
-        /// <param name="gameOverStackPanel">РџР°РЅРµР»СЊ РѕРєРѕРЅС‡Р°РЅРёСЏ РёРіСЂС‹</param>
-        /// <param name="multiplierText">РўРµРєСЃС‚РѕРІС‹Р№ Р±Р»РѕРє РјРЅРѕР¶РёС‚РµР»СЏ</param>
-        public UIManager(ScrollViewer settingsScrollViewer, ScrollViewer rulesScrollViewer,
-                        UIElement mainMenuContainer, UIElement gameContainer,
-                        TextBlock scoreText, TextBlock timeText,
-                        UIElement glossolaliaLabel, UIElement gameCanvas, UIElement gameOverStackPanel,
-                        TextBlock multiplierText)
-        {
-            this.settingsScrollViewer = settingsScrollViewer;
-            this.rulesScrollViewer = rulesScrollViewer;
-            this.mainMenuContainer = mainMenuContainer;
-            this.gameContainer = gameContainer;
-            this.scoreText = scoreText;
-            this.timeText = timeText;
-            this.glossolaliaLabel = glossolaliaLabel;
-            this.gameCanvas = gameCanvas;
-            this.gameOverStackPanel = gameOverStackPanel;
-            this.multiplierText = multiplierText;
+      /// <summary>
+      /// Конструктор. Инициализирует ссылки на элементы UI
+      /// </summary>
+      /// <param name="settingsScrollViewer">ScrollViewer настроек</param>
+      /// <param name="rulesScrollViewer">ScrollViewer правил</param>
+      /// <param name="mainMenuContainer">Контейнер главного меню</param>
+      /// <param name="gameContainer">Контейнер игрового интерфейса</param>
+      /// <param name="scoreText">Текстовый блок счета</param>
+      /// <param name="timeText">Текстовый блок времени</param>
+      /// <param name="glossolaliaLabel">Заголовок игры</param>
+      /// <param name="gameCanvas">Игровой холст</param>
+      /// <param name="gameOverStackPanel">Панель окончания игры</param>
+      /// <param name="multiplierText">Текстовый блок множителя</param>
+      public UIManager(ScrollViewer settingsScrollViewer, ScrollViewer rulesScrollViewer,
+                      UIElement mainMenuContainer, UIElement gameContainer,
+                      TextBlock scoreText, TextBlock timeText,
+                      UIElement glossolaliaLabel, UIElement gameCanvas, UIElement gameOverStackPanel,
+                      TextBlock multiplierText)
+      {
+         this.settingsScrollViewer = settingsScrollViewer;
+         this.rulesScrollViewer = rulesScrollViewer;
+         this.mainMenuContainer = mainMenuContainer;
+         this.gameContainer = gameContainer;
+         this.scoreText = scoreText;
+         this.timeText = timeText;
+         this.glossolaliaLabel = glossolaliaLabel;
+         this.gameCanvas = gameCanvas;
+         this.gameOverStackPanel = gameOverStackPanel;
+         this.multiplierText = multiplierText;
 
-            HideAllScrollViewers();
-        }
+         HideAllScrollViewers();
+      }
 
-        #endregion
+      #endregion
 
-        #region РњРµС‚РѕРґС‹ СѓРїСЂР°РІР»РµРЅРёСЏ UI
+      #region Методы управления UI
 
-        /// <summary>
-        /// РЎРєСЂС‹РІР°РµС‚ РІСЃРµ ScrollViewer'С‹ (РѕРєРЅР° РЅР°СЃС‚СЂРѕРµРє Рё РїСЂР°РІРёР»)
-        /// </summary>
-        public void HideAllScrollViewers()
-        {
-            settingsScrollViewer.Visibility = Visibility.Collapsed;
-            rulesScrollViewer.Visibility = Visibility.Collapsed;
-        }
+      /// <summary>
+      /// Скрывает все ScrollViewer'ы (окна настроек и правил)
+      /// </summary>
+      public void HideAllScrollViewers()
+      {
+         settingsScrollViewer.Visibility = Visibility.Collapsed;
+         rulesScrollViewer.Visibility = Visibility.Collapsed;
+      }
 
-        /// <summary>
-        /// РџРѕРєР°Р·С‹РІР°РµС‚ РѕРєРЅРѕ РЅР°СЃС‚СЂРѕРµРє
-        /// </summary>
-        public void ShowSettings()
-        {
-            ResetScrollViewer(settingsScrollViewer);
-            settingsScrollViewer.Visibility = Visibility.Visible;
-            rulesScrollViewer.Visibility = Visibility.Collapsed;
-        }
+      /// <summary>
+      /// Показывает окно настроек
+      /// </summary>
+      public void ShowSettings()
+      {
+         ResetScrollViewer(settingsScrollViewer);
+         settingsScrollViewer.Visibility = Visibility.Visible;
+         rulesScrollViewer.Visibility = Visibility.Collapsed;
+      }
 
-        /// <summary>
-        /// РџРѕРєР°Р·С‹РІР°РµС‚ РѕРєРЅРѕ РїСЂР°РІРёР»
-        /// </summary>
-        public void ShowRules()
-        {
-            ResetScrollViewer(rulesScrollViewer);
-            rulesScrollViewer.Visibility = Visibility.Visible;
-            settingsScrollViewer.Visibility = Visibility.Collapsed;
-        }
+      /// <summary>
+      /// Показывает окно правил
+      /// </summary>
+      public void ShowRules()
+      {
+         ResetScrollViewer(rulesScrollViewer);
+         rulesScrollViewer.Visibility = Visibility.Visible;
+         settingsScrollViewer.Visibility = Visibility.Collapsed;
+      }
 
-        /// <summary>
-        /// РџРѕРєР°Р·С‹РІР°РµС‚ РіР»Р°РІРЅРѕРµ РјРµРЅСЋ
-        /// </summary>
-        /// <param name="showTitle">РџРѕРєР°Р·С‹РІР°С‚СЊ Р»Рё Р·Р°РіРѕР»РѕРІРѕРє РёРіСЂС‹</param>
-        public void ShowMainMenu(bool showTitle = true)
-        {
-            mainMenuContainer.Visibility = Visibility.Visible;
-            gameContainer.Visibility = Visibility.Collapsed;
-            gameOverStackPanel.Visibility = Visibility.Collapsed;
-            glossolaliaLabel.Visibility = showTitle ? Visibility.Visible : Visibility.Collapsed;
-            HideAllScrollViewers();
-        }
+      /// <summary>
+      /// Показывает главное меню
+      /// </summary>
+      /// <param name="showTitle">Показывать ли заголовок игры</param>
+      public void ShowMainMenu(bool showTitle = true)
+      {
+         mainMenuContainer.Visibility = Visibility.Visible;
+         gameContainer.Visibility = Visibility.Collapsed;
+         gameOverStackPanel.Visibility = Visibility.Collapsed;
+         glossolaliaLabel.Visibility = showTitle ? Visibility.Visible : Visibility.Collapsed;
+         HideAllScrollViewers();
+      }
 
-
-/// <summary>
-/// РџРѕРєР°Р·С‹РІР°РµС‚ РёРіСЂРѕРІРѕР№ РёРЅС‚РµСЂС„РµР№СЃ
-/// </summary>
+      /// <summary>
+      /// Показывает игровой интерфейс
+      /// </summary>
       public void ShowGame()
-        {
-            mainMenuContainer.Visibility = Visibility.Collapsed;
-            gameContainer.Visibility = Visibility.Visible;
-            gameCanvas.Visibility = Visibility.Visible;
-        }
+      {
+         mainMenuContainer.Visibility = Visibility.Collapsed;
+         gameContainer.Visibility = Visibility.Visible;
+         gameCanvas.Visibility = Visibility.Visible;
+      }
 
-        /// <summary>
-        /// РџРѕРєР°Р·С‹РІР°РµС‚ РјРµРЅСЋ РїР°СѓР·С‹ (РіР»Р°РІРЅРѕРµ РјРµРЅСЋ Р±РµР· Р·Р°РіРѕР»РѕРІРєР°)
-        /// </summary>
-        public void ShowPauseMenu()
-        {
-            gameCanvas.Visibility = Visibility.Collapsed;
-            ShowMainMenu(false);
-            gameContainer.Visibility = Visibility.Visible;
-        }
+      /// <summary>
+      /// Показывает меню паузы (главное меню без заголовка)
+      /// </summary>
+      public void ShowPauseMenu()
+      {
+         gameCanvas.Visibility = Visibility.Collapsed;
+         ShowMainMenu(false);
+         gameContainer.Visibility = Visibility.Visible;
+      }
 
-        /// <summary>
-        /// РџРѕРєР°Р·С‹РІР°РµС‚ СЌРєСЂР°РЅ РѕРєРѕРЅС‡Р°РЅРёСЏ РёРіСЂС‹
-        /// </summary>
-        public void ShowGameOver()
-        {
-            gameOverStackPanel.Visibility = Visibility.Visible;
-        }
+      /// <summary>
+      /// Показывает экран окончания игры
+      /// </summary>
+      public void ShowGameOver()
+      {
+         gameOverStackPanel.Visibility = Visibility.Visible;
+      }
 
-        #endregion
+      #endregion
 
-        #region РњРµС‚РѕРґС‹ РѕР±РЅРѕРІР»РµРЅРёСЏ РґР°РЅРЅС‹С…
+      #region Методы обновления данных
 
-        /// <summary>
-        /// РћР±РЅРѕРІР»СЏРµС‚ РѕС‚РѕР±СЂР°Р¶РµРЅРёРµ СЃС‡РµС‚Р°
-        /// </summary>
-        public void UpdateScore(int score)
-        {
-            scoreText.Text = score.ToString();
-        }
+      /// <summary>
+      /// Обновляет отображение счета
+      /// </summary>
+      public void UpdateScore(int score)
+      {
+         scoreText.Text = score.ToString();
+      }
 
-        /// <summary>
-        /// РћР±РЅРѕРІР»СЏРµС‚ РѕС‚РѕР±СЂР°Р¶РµРЅРёРµ РІСЂРµРјРµРЅРё
-        /// </summary>
-        public void UpdateTime(TimeSpan time)
-        {
-            timeText.Text = time.ToString(@"mm\:ss");
-        }
+      /// <summary>
+      /// Обновляет отображение времени
+      /// </summary>
+      public void UpdateTime(TimeSpan time)
+      {
+         timeText.Text = time.ToString(@"mm\:ss");
+      }
 
-        /// <summary>
-        /// РћР±РЅРѕРІР»СЏРµС‚ РѕС‚РѕР±СЂР°Р¶РµРЅРёРµ РјРЅРѕР¶РёС‚РµР»СЏ
-        /// </summary>
-        public void UpdateMultiplier(int multiplier)
-        {
-            multiplierText.Text = $"x{multiplier}";
-        }
+      /// <summary>
+      /// Обновляет отображение множителя
+      /// </summary>
+      public void UpdateMultiplier(int multiplier)
+      {
+         multiplierText.Text = $"x{multiplier}";
+      }
 
-        #endregion
+      #endregion
 
-        #region РџСЂРёРІР°С‚РЅС‹Рµ РјРµС‚РѕРґС‹
+      #region Приватные методы
 
-        /// <summary>
-        /// РЎР±СЂР°СЃС‹РІР°РµС‚ РїСЂРѕРєСЂСѓС‚РєСѓ ScrollViewer'Р° РІ РЅР°С‡Р°Р»СЊРЅРѕРµ РїРѕР»РѕР¶РµРЅРёРµ
-        /// </summary>
-        private void ResetScrollViewer(ScrollViewer scrollViewer)
-        {
-            scrollViewer.ScrollToVerticalOffset(0);
-            scrollViewer.ScrollToHorizontalOffset(0);
-        }
+      /// <summary>
+      /// Сбрасывает прокрутку ScrollViewer'а в начальное положение
+      /// </summary>
+      private void ResetScrollViewer(ScrollViewer scrollViewer)
+      {
+         scrollViewer.ScrollToVerticalOffset(0);
+         scrollViewer.ScrollToHorizontalOffset(0);
+      }
 
-        #endregion
-    }
+      #endregion
+   }
 }

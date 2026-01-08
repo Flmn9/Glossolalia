@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -27,7 +28,6 @@ namespace Glossolalia
       #region Зависимости
 
       private readonly Canvas gameCanvas;
-      private readonly TextBlock synonymTextBlock;
       private readonly GameStateManager gameStateManager;
       private readonly ScoreManager scoreManager;
       private readonly BonusManager bonusManager;
@@ -47,6 +47,7 @@ namespace Glossolalia
       #region Состояние игры
 
       private readonly List<FallingWord> activeWords;
+      private readonly Dictionary<FallingWord, string> originalWords;
       private readonly Random random;
 
       private double baseWordSpeed = SpeedSettings.DEFAULT_SPEED;
@@ -58,8 +59,8 @@ namespace Glossolalia
       private bool isFrozen;
       private bool isRegisterCaseActive;
 
-      private DispatcherTimer gameLoopTimer;
-      private DateTime lastFrameTime;
+      private Stopwatch gameStopwatch;
+      private double lastFrameTime;
 
       #endregion
 
@@ -79,7 +80,6 @@ namespace Glossolalia
                         SynonymDictionary synonymDictionary)
       {
          this.gameCanvas = gameCanvas;
-         this.synonymTextBlock = synonymTextBlock;
          this.gameStateManager = gameStateManager;
          this.scoreManager = scoreManager;
          this.bonusManager = bonusManager;
@@ -87,6 +87,7 @@ namespace Glossolalia
 
          random = new Random();
          activeWords = new List<FallingWord>();
+         originalWords = new Dictionary<FallingWord, string>();
 
          additionalInputSystem = new AdditionalInputSystem(synonymDictionary, synonymTextBlock);
          additionalInputSystem.WordDestroyedByAdditionalSystem += OnWordDestroyedByAdditionalSystem;
@@ -112,15 +113,15 @@ namespace Glossolalia
       /// </summary>
       private void InitializeGameLoop()
       {
-         gameLoopTimer = new DispatcherTimer(DispatcherPriority.Render);
-         gameLoopTimer.Interval = TimeSpan.FromMilliseconds(16); // ~60 FPS
-         gameLoopTimer.Tick += GameLoopTimer_Tick;
+         CompositionTarget.Rendering += CompositionTarget_Rendering;
 
          wordSpawnTimer = new DispatcherTimer
          {
             Interval = TimeSpan.FromSeconds(WORD_SPAWN_INTERVAL)
          };
          wordSpawnTimer.Tick += WordSpawnTimer_Tick;
+
+         gameStopwatch = new Stopwatch();
       }
 
       #endregion
@@ -128,9 +129,9 @@ namespace Glossolalia
       #region Обработчики событий
 
       /// <summary>
-      /// Обработчик игрового цикла
+      /// Обработчик рендеринга для игрового цикла
       /// </summary>
-      private void GameLoopTimer_Tick(object sender, EventArgs e)
+      private void CompositionTarget_Rendering(object sender, EventArgs e)
       {
          if (gameStateManager.CurrentState != GameStateManager.GameState.Running || isFrozen)
          {
@@ -179,10 +180,10 @@ namespace Glossolalia
       /// <summary>
       /// Обработчик уничтожения слова дополнительной системой
       /// </summary>
-      private void OnWordDestroyedByAdditionalSystem(int totalScore)
+      private void OnWordDestroyedByAdditionalSystem(int totalScore, int wordCount)
       {
          scoreManager.AddPoints(totalScore);
-         destroyedWordsCount++;
+         destroyedWordsCount += wordCount;
          CheckSpeedIncrease();
       }
 
@@ -212,6 +213,12 @@ namespace Glossolalia
          {
             additionalSystemResult = additionalInputSystem.HandleCharInput(
                 pressedChar, activeWords, scoreManager);
+
+            if (additionalSystemResult && !additionalInputSystem.IsActive)
+            {
+               string bonusType = synonymBonusActive ? "синоним" : "антоним";
+               additionalInputSystem.Activate(bonusType, activeWords);
+            }
          }
 
          ProcessInputResult(mainSystemResult, additionalSystemResult, additionalSystemActive);
@@ -225,6 +232,11 @@ namespace Glossolalia
          if (gameStateManager.CurrentState == GameStateManager.GameState.Running)
          {
             inputHandler.HandleBackspace();
+
+            if (additionalInputSystem.IsActive)
+            {
+               additionalInputSystem.HandleBackspace();
+            }
          }
       }
 
@@ -249,6 +261,7 @@ namespace Glossolalia
          ResetGameState();
          additionalInputSystem.Reset();
          additionalInputSystem.Deactivate();
+         ResetRegisterBonus();
          scoreManager.Reset();
 
          StartGameTimers();
@@ -260,7 +273,7 @@ namespace Glossolalia
       /// </summary>
       public void PauseGame()
       {
-         gameLoopTimer.Stop();
+         gameStopwatch.Stop();
          wordSpawnTimer.Stop();
       }
 
@@ -269,7 +282,7 @@ namespace Glossolalia
       /// </summary>
       public void ResumeGame()
       {
-         gameLoopTimer.Start();
+         gameStopwatch.Start();
 
          if (!isFrozen)
          {
@@ -282,7 +295,7 @@ namespace Glossolalia
       /// </summary>
       public void StopGame()
       {
-         gameLoopTimer.Stop();
+         gameStopwatch.Stop();
          wordSpawnTimer.Stop();
          ClearGameField();
          additionalInputSystem.Deactivate();
@@ -311,6 +324,15 @@ namespace Glossolalia
       public void ActivateRegisterCase(bool activate)
       {
          isRegisterCaseActive = activate;
+
+         if (activate)
+         {
+            ApplyRandomCaseToAllWords();
+         }
+         else
+         {
+            RestoreOriginalWords();
+         }
       }
 
       /// <summary>
@@ -349,7 +371,7 @@ namespace Glossolalia
          isFrozen = true;
          MultiplyAllWordsSpeed(0);
          wordSpawnTimer.Stop();
-         gameLoopTimer.Stop();
+         gameStopwatch.Stop();
       }
 
       /// <summary>
@@ -370,8 +392,8 @@ namespace Glossolalia
          if (gameStateManager.CurrentState == GameStateManager.GameState.Running)
          {
             wordSpawnTimer.Start();
-            gameLoopTimer.Start();
-            lastFrameTime = DateTime.Now;
+            gameStopwatch.Start();
+            lastFrameTime = gameStopwatch.Elapsed.TotalSeconds;
          }
       }
 
@@ -401,8 +423,8 @@ namespace Glossolalia
       /// </summary>
       public void Dispose()
       {
-         gameLoopTimer.Stop();
-         wordSpawnTimer.Stop();
+         CompositionTarget.Rendering -= CompositionTarget_Rendering;
+         gameStopwatch.Stop();
 
          if (inputHandler != null)
          {
@@ -424,9 +446,8 @@ namespace Glossolalia
       /// </summary>
       private void UpdateGameFrame()
       {
-         DateTime currentTime = DateTime.Now;
-         double deltaTime = (currentTime - lastFrameTime).TotalSeconds;
-         lastFrameTime = currentTime;
+         double currentTime = gameStopwatch.Elapsed.TotalSeconds;
+         double deltaTime = currentTime - lastFrameTime;
 
          if (deltaTime > 0.1) deltaTime = TARGET_FRAME_TIME;
 
@@ -439,6 +460,8 @@ namespace Glossolalia
             {
                gameStateManager.GameOver();
             }
+
+            lastFrameTime = currentTime;
          }
       }
 
@@ -453,6 +476,16 @@ namespace Glossolalia
          if (fallingWord != null)
          {
             activeWords.Add(fallingWord);
+            // Для обычных слов сохраняем оригинальное слово для бонуса регистра
+            if (!fallingWord.IsBonus)
+            {
+               originalWords[fallingWord] = wordText.ToLowerInvariant();
+            }
+
+            if (isRegisterCaseActive && !fallingWord.IsBonus)
+            {
+               ApplyRandomCaseToWord(fallingWord);
+            }
 
             if (additionalInputSystem.IsActive)
             {
@@ -501,6 +534,8 @@ namespace Glossolalia
       /// </summary>
       private void DestroyWord(FallingWord word)
       {
+         originalWords.Remove(word);
+
          if (word.IsBonus)
          {
             ActivateBonus(word.BonusType);
@@ -552,6 +587,59 @@ namespace Glossolalia
       }
 
       /// <summary>
+      /// Применяет случайный регистр к слову
+      /// </summary>
+      private void ApplyRandomCaseToWord(FallingWord word)
+      {
+         if (word.IsDestroyed) return;
+
+         string originalWord = originalWords.ContainsKey(word)
+             ? originalWords[word]
+             : word.Word.ToLowerInvariant();
+
+         var result = new System.Text.StringBuilder(originalWord);
+         var random = new Random();
+
+         for (int i = 0; i < result.Length; i++)
+         {
+            if (random.Next(100) < 40 && char.IsLetter(result[i]))
+            {
+               result[i] = char.ToUpperInvariant(result[i]);
+            }
+         }
+
+         word.SetWord(result.ToString());
+      }
+
+      /// <summary>
+      /// Применяет случайный регистр ко всем словам
+      /// </summary>
+      private void ApplyRandomCaseToAllWords()
+      {
+         foreach (var word in activeWords)
+         {
+            if (!word.IsDestroyed)
+            {
+               ApplyRandomCaseToWord(word);
+            }
+         }
+      }
+
+      /// <summary>
+      /// Восстанавливает оригинальные слова
+      /// </summary>
+      private void RestoreOriginalWords()
+      {
+         foreach (var word in activeWords)
+         {
+            if (!word.IsDestroyed && originalWords.ContainsKey(word))
+            {
+               word.SetWord(originalWords[word]);
+            }
+         }
+      }
+
+      /// <summary>
       /// Очищает игровое поле
       /// </summary>
       private void ClearGameField()
@@ -561,6 +649,7 @@ namespace Glossolalia
             word.Destroy();
          }
          activeWords.Clear();
+         originalWords.Clear();
          gameCanvas.Children.Clear();
       }
 
@@ -573,7 +662,6 @@ namespace Glossolalia
          currentSpawnInterval = WORD_SPAWN_INTERVAL;
          lastDestroyedWord = string.Empty;
          isFrozen = false;
-         isRegisterCaseActive = false;
       }
 
       /// <summary>
@@ -581,9 +669,23 @@ namespace Glossolalia
       /// </summary>
       private void StartGameTimers()
       {
-         lastFrameTime = DateTime.Now;
-         gameLoopTimer.Start();
+         gameStopwatch.Restart();
+         lastFrameTime = 0;
          wordSpawnTimer.Start();
+      }
+
+      /// <summary>
+      /// Сбрасывает бонус регистра
+      /// </summary>
+      private void ResetRegisterBonus()
+      {
+         if (isRegisterCaseActive)
+         {
+            RestoreOriginalWords();
+            isRegisterCaseActive = false;
+         }
+
+         originalWords.Clear();
       }
 
       #endregion
