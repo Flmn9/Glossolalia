@@ -7,7 +7,7 @@
         mc:Ignorable="d" Title="Glossolalia" Height="600" Width="800"
         FontFamily="Gabriola" MinWidth="800" MinHeight="600"
         ResizeMode="CanMinimize" Icon="/images/Glossolalia.ico"
-        Cursor="Pen" KeyDown="Window_KeyDown">
+        Cursor="Pen" KeyDown="Window_KeyDown" TextInput="Window_TextInput">
 
     <Grid x:Name="MainGrid" Cursor="">
         <Viewbox Stretch="Uniform" Focusable="False">
@@ -23,15 +23,15 @@
                     <Grid x:Name="TopMenu" Height="50" VerticalAlignment="Top" Background="White">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="50"/>
-                            <ColumnDefinition Width="8*"/>
-                            <ColumnDefinition Width="9*"/>
-                            <ColumnDefinition Width="13*"/>
+                            <ColumnDefinition Width="87*"/>
+                            <ColumnDefinition Width="87*"/>
+                            <ColumnDefinition Width="76*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <!-- Кнопка паузы -->
                         <Button x:Name="PauseButton" Grid.Column="0" 
-                                Content="⏸" FontSize="36" Background="Transparent" 
+                                Content="⏸️" FontSize="36" Background="Transparent" 
                                 BorderThickness="0" Click="PauseButton_Click"/>
 
                         <!-- Счетчики очков -->
@@ -43,15 +43,23 @@
                         <!-- Название бонуса -->
                         <TextBlock x:Name="BonusText" Grid.Column="2" 
                                    Text="Бонус" FontSize="36" 
-                                   HorizontalAlignment="Left" Width="180" Visibility="Collapsed"/>
+                                   HorizontalAlignment="Left" Width="180" Visibility="Collapsed" Padding="5,0,0,0">
+                            <TextBlock.Effect>
+                                <DropShadowEffect 
+                                ShadowDepth="0" 
+                                BlurRadius="10" 
+                                Color="White"
+                                Opacity="1"/>
+                            </TextBlock.Effect>
+                        </TextBlock>
 
                         <!-- Множитель очков -->
                         <TextBlock x:Name="MultiplierText" Grid.Column="3" 
                                    Text="x1" FontSize="48" 
-                                   HorizontalAlignment="Left" Width="149" TextAlignment="Center" VerticalAlignment="Center" Height="75"/>
+                                   HorizontalAlignment="Left" Width="60" TextAlignment="Center" VerticalAlignment="Top" Height="75" Margin="0,-16,0,0"/>
 
                         <!-- Счетчики времени -->
-                        <StackPanel Orientation="Horizontal" Grid.Column="3" HorizontalAlignment="Right" Margin="132,0,0,0" Width="152">
+                        <StackPanel Orientation="Horizontal" Grid.Column="3" HorizontalAlignment="Left" Width="152" Margin="76,0,0,0">
                             <TextBlock Text="Время: " FontSize="36"/>
                             <TextBlock x:Name="TimeText" Text="00:00" FontSize="36" FontWeight="Bold"/>
                         </StackPanel>
@@ -62,14 +70,15 @@
                          Maximum="1"
                          Value="1"
                          Foreground="#456B99" Background="#FFEEEEEE"
-                         Grid.ColumnSpan="4" VerticalAlignment="Top" Panel.ZIndex="-4" BorderBrush="{x:Null}" Visibility="Hidden"/>
+                         Grid.ColumnSpan="4" VerticalAlignment="Center" Panel.ZIndex="-4" BorderBrush="{x:Null}" Visibility="Hidden"/>
                     </Grid>
 
                     <!-- Основная игровая область -->
-                    <Canvas x:Name="GameCanvas" Margin="0,50,0,0">
-                        <!-- Здесь будет игра -->
+                    <Canvas x:Name="GameCanvas" Margin="0,50,0,0" Background="Transparent">
                     </Canvas>
 
+                    <TextBlock x:Name="SynonymText" Canvas.Left="0" TextWrapping="Wrap" Text="" Canvas.Top="0" Width="75" Height="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" TextAlignment="Center" FontSize="72" Foreground="#FF456B99"/>
+                    
                     <!-- Сообщение Игра окончена -->
                     <StackPanel x:Name="GameOverStackPanel" VerticalAlignment="Center" Visibility="Collapsed">
                         <TextBlock HorizontalAlignment="Center" TextWrapping="Wrap" Text="Игра окончена!" VerticalAlignment="Center" FontSize="48"/>
