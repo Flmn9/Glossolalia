@@ -43,7 +43,7 @@ namespace Glossolalia
         /// </summary>
         /// <param name="scoreManager">Менеджер счета</param>
         /// <param name="activeWords">Список активных слов</param>
-        private InputHandler(ScoreManager scoreManager, List<FallingWord> activeWords)
+        public InputHandler(ScoreManager scoreManager, List<FallingWord> activeWords)
         {
             this.scoreManager = scoreManager;
             this.activeWords = activeWords;

@@ -38,7 +38,7 @@ namespace Glossolalia
         /// <param name="activeWords">Список активных слов</param>
         /// <param name="synonymDictionary">Словарь синонимов</param>
         /// <param name="bonusManager">Менеджер бонусов</param>
-        private WordSpawnManager(Canvas gameCanvas, List<FallingWord> activeWords,
+        public WordSpawnManager(Canvas gameCanvas, List<FallingWord> activeWords,
                               SynonymDictionary synonymDictionary, BonusManager bonusManager)
         {
             this.gameCanvas = gameCanvas;
