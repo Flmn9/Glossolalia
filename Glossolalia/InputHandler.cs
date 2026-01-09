@@ -11,7 +11,7 @@ namespace Glossolalia
    {
       #region Константы
 
-      private const int REGISTER_BONUS_MULTIPLIER = 2;
+      private const int REGISTER_BONUS_MULTIPLIER = 9;
 
       #endregion
 
@@ -100,7 +100,7 @@ namespace Glossolalia
 
          foreach (var word in activeWords)
          {
-            if (!word.IsDestroyed && !word.IsBonus)
+            if (!word.IsDestroyed)
             {
                word.DeselectLastLetter();
             }

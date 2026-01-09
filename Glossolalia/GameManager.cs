@@ -16,10 +16,10 @@ namespace Glossolalia
    {
       #region Константы
 
-      private const double WORD_SPAWN_INTERVAL = 2;
+      private const double WORD_SPAWN_INTERVAL = 1.5;
       private const int WORDS_FOR_SPEED_INCREASE = 10;
-      private const double SPEED_INCREASE_MULTIPLIER = 1.01;
-      private const double SPAWN_DECREASE_MULTIPLIER = 0.99;
+      private const double SPEED_INCREASE_MULTIPLIER = 1.05;
+      private const double SPAWN_DECREASE_MULTIPLIER = 0.90;
       private const double TARGET_FPS = 60.0;
       private const double TARGET_FRAME_TIME = 1.0 / TARGET_FPS;
 

@@ -15,7 +15,7 @@ namespace Glossolalia
       #region Константы
 
       private const double BONUS_SPAWN_CHANCE = 0.10;
-      private const int MAX_ACTIVE_WORDS = 30;
+      private const int MAX_ACTIVE_WORDS = 50;
 
       #endregion
 
